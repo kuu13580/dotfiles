@@ -1,0 +1,10 @@
+# .ssh
+Host hoge
+HostName example.com.com
+User root
+Port 22
+IdentityFile ~/.ssh/id_rsa
+
+# 途中で接続が切れるのを防ぐ(改善されなければサーバー側にClinent~を追加)
+ServerAliveInterval 60
+ServerAliveCountMax 120
