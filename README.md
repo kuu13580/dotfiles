@@ -12,4 +12,9 @@ sshに関するconfigのテンプレート
 Google日本語入力のカスタムキー構成  
 変換・無変換/英数の設定が主  
 
+## VSCode拡張機能の推奨プラグイン
+
+`.vscode/extensions.json`  
+拡張機能の推奨  
+
 
