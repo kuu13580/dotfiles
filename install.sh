@@ -20,15 +20,6 @@ else
     echo "✅ zshは既にインストール済みです"
 fi
 
-# デフォルトシェルをzshに変更
-echo "🔧 デフォルトシェルをzshに変更中..."
-if [ "$SHELL" != "$(which zsh)" ]; then
-    chsh -s $(which zsh)
-    echo "✅ デフォルトシェルをzshに変更しました"
-else
-    echo "✅ 既にzshがデフォルトシェルです"
-fi
-
 # Oh My Zshのインストール
 echo "🎨 Oh My Zshをインストール中..."
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
