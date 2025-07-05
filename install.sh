@@ -10,10 +10,6 @@ echo "🚀 dotfilesセットアップを開始します..."
 # 現在のディレクトリを取得
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 最初にsudo権限を取得してキャッシュ
-echo "🔐 sudo権限の確認..."
-sudo -v
-
 # zshのインストール
 echo "📦 zshをインストール中..."
 if ! command -v zsh &> /dev/null; then
@@ -66,11 +62,11 @@ if [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ]; then
     echo "📋 既存の.zshrcをバックアップしました"
 fi
 
-# シンボリックリンクの作成
+# .zshのコピー
 cp "$DOTFILES_DIR/dotfiles/.zshrc" "$HOME/.zshrc"
 echo "✅ .zshrcをリンクしました"
 
-# .p10k.zshがある場合はリンク
+# .p10k.zshのコピー
 if [ -f "$DOTFILES_DIR/dotfiles/.p10k.zsh" ]; then
     cp "$DOTFILES_DIR/dotfiles/.p10k.zsh" "$HOME/.p10k.zsh"
     echo "✅ .p10k.zshをリンクしました"
