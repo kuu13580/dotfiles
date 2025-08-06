@@ -108,3 +108,9 @@ source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# custom alias
+
+alias rebase='f(){ git fetch origin; git rebase origin/$1; git rebase -i origin/$1; unset -f f; }; f'
+alias squash='f(){ git fetch origin; git rebase -i $1 --autosquash; unset -f f; }; f'
+
