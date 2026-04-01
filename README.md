@@ -1,20 +1,71 @@
-# dotenv
+# dotfiles
 
-自分用のスクリプトや設定値置き場  
+個人用のシェル設定・開発環境の設定ファイル管理リポジトリ
 
-## `config`
+## セットアップ
 
-`.ssh/config`  
-sshに関するconfigのテンプレート  
+```bash
+git clone <repo-url> ~/dotfiles
+cd ~/dotfiles
+./install.sh
+```
 
-## `custom_keymap.txt`
+## 管理方針
 
-Google日本語入力のカスタムキー構成  
-変換・無変換/英数の設定が主  
+### 1. Symlink Only
 
-## VSCode拡張機能の推奨プラグイン
+`install.sh`は`cp`ではなく`ln -sf`でシンボリックリンクを作成する。
+`$HOME`側の変更が即座にリポジトリに反映され、Single Source of Truthを維持する。
 
-`.vscode/extensions.json`  
-拡張機能の推奨  
+### 2. 環境固有設定の分離 (Local Files)
 
+OS固有の設定や秘密情報は`.zshrc`本体に記述せず、`~/.zshrc.local`に分離する。
+`.zshrc`末尾で自動的にsourceされる。`*.local`は`.gitignore`に含まれる。
 
+```zsh
+# 例: ~/.zshrc.local
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+```
+
+### 3. 設定の肥大化防止
+
+- `typeset -U path PATH` でPATHの重複を防止
+- `[[ -f ... ]] && source ...` でオプショナルなプラグインの存在チェック
+- `(( $+commands[cmd] ))` で未インストールコマンドの設定をガード
+
+## 検証環境 (Docker)
+
+`install.sh`の動作をクリーンなUbuntu 24.04環境で検証できる。
+
+### VSCode Dev Containers (推奨)
+
+1. VSCodeで「Dev Containers」拡張機能をインストール
+2. このリポジトリを開き、`Ctrl+Shift+P` → `Dev Containers: Reopen in Container`
+3. コンテナ起動時に`install.sh`が自動実行される
+
+### CLIで検証
+
+```bash
+# ビルド
+docker build -t dotfiles-test .
+
+# install.sh実行 + symlink確認
+docker run --rm -v "$(pwd):/home/testuser/dotfiles" dotfiles-test \
+  bash -c "cd ~/dotfiles && bash install.sh && ls -la ~/.zshrc ~/.p10k.zsh"
+
+# zshを対話的に試す
+docker run --rm -it -v "$(pwd):/home/testuser/dotfiles" dotfiles-test \
+  bash -c "cd ~/dotfiles && bash install.sh && zsh"
+```
+
+## ファイル一覧
+
+| ファイル | 説明 |
+|---------|------|
+| `dotfiles/.zshrc` | Zsh設定 (oh-my-zsh + powerlevel10k) |
+| `dotfiles/.p10k.zsh` | Powerlevel10kプロンプト設定 |
+| `config` | SSH configテンプレート (手動コピー) |
+| `custom_keymap.txt` | Google日本語入力カスタムキーマップ |
+| `extensions.json` | VSCode推奨拡張機能 |
+| `install.sh` | セットアップスクリプト |

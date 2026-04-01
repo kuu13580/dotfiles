@@ -53,13 +53,17 @@ if [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ]; then
     echo "📋 既存の.zshrcをバックアップしました"
 fi
 
-# .zshのコピー
-cp "$DOTFILES_DIR/dotfiles/.zshrc" "$HOME/.zshrc"
+# .zshrcのシンボリックリンク作成
+ln -sf "$DOTFILES_DIR/dotfiles/.zshrc" "$HOME/.zshrc"
 echo "✅ .zshrcをリンクしました"
 
-# .p10k.zshのコピー
+# .p10k.zshのバックアップとシンボリックリンク作成
+if [ -f "$HOME/.p10k.zsh" ] && [ ! -L "$HOME/.p10k.zsh" ]; then
+    cp "$HOME/.p10k.zsh" "$HOME/.p10k.zsh.backup.$(date +%Y%m%d_%H%M%S)"
+    echo "📋 既存の.p10k.zshをバックアップしました"
+fi
 if [ -f "$DOTFILES_DIR/dotfiles/.p10k.zsh" ]; then
-    cp "$DOTFILES_DIR/dotfiles/.p10k.zsh" "$HOME/.p10k.zsh"
+    ln -sf "$DOTFILES_DIR/dotfiles/.p10k.zsh" "$HOME/.p10k.zsh"
     echo "✅ .p10k.zshをリンクしました"
 fi
 
