@@ -67,6 +67,9 @@ if [ -f "$DOTFILES_DIR/dotfiles/.p10k.zsh" ]; then
     echo "✅ .p10k.zshをリンクしました"
 fi
 
+# Git設定の適用
+source "$DOTFILES_DIR/setup-git.sh"
+
 echo ""
 echo "🎉 dotfilesセットアップが完了しました！"
 echo ""

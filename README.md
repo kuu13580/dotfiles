@@ -68,4 +68,5 @@ docker run --rm -it -v "$(pwd):/home/testuser/dotfiles" dotfiles-test \
 | `config` | SSH configテンプレート (手動コピー) |
 | `custom_keymap.txt` | Google日本語入力カスタムキーマップ |
 | `extensions.json` | VSCode推奨拡張機能 |
+| `setup-git.sh` | Git共通設定スクリプト (user設定除く) |
 | `install.sh` | セットアップスクリプト |

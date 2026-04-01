@@ -117,7 +117,6 @@ source $ZSH/oh-my-zsh.sh
 # custom alias
 
 alias rebase='f(){ git fetch origin; git rebase origin/$1; git rebase -i origin/$1; unset -f f; }; f'
-alias squash='f(){ git fetch origin; git rebase -i $1 --autosquash; unset -f f; }; f'
 
 # Load machine-local overrides (not tracked in git)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
