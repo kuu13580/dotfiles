@@ -1,0 +1,17 @@
+{
+  "name": "dotfiles-test",
+  "build": {
+    "dockerfile": "../Dockerfile"
+  },
+  "remoteUser": "testuser",
+  "workspaceFolder": "/home/testuser",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/testuser/dotfiles,type=bind",
+  "postCreateCommand": "cd ~/dotfiles && bash install.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  }
+}
