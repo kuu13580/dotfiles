@@ -59,14 +59,32 @@ docker run --rm -it -v "$(pwd):/home/testuser/dotfiles" dotfiles-test \
   bash -c "cd ~/dotfiles && bash install.sh && zsh"
 ```
 
+## フォント設定
+
+### エディタフォント (推奨): PlemolJP
+
+プログラミング向け日英対応フォント。[PlemolJP](https://github.com/yuru7/PlemolJP)のReleasesからインストールし、VSCodeの設定に追加:
+
+```json
+"editor.fontFamily": "PlemolJP Console NF"
+```
+
+### ターミナルフォント: MesloLGS NF
+
+Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerlevel10k?tab=readme-ov-file#fonts)から4つのttfファイルをダウンロードしてインストールし、VSCodeの設定に追加:
+
+```json
+"terminal.integrated.fontFamily": "MesloLGS NF"
+```
+
 ## ファイル一覧
 
-| ファイル | 説明 |
-|---------|------|
-| `dotfiles/.zshrc` | Zsh設定 (oh-my-zsh + powerlevel10k) |
-| `dotfiles/.p10k.zsh` | Powerlevel10kプロンプト設定 |
-| `config` | SSH configテンプレート (手動コピー) |
-| `custom_keymap.txt` | Google日本語入力カスタムキーマップ |
-| `extensions.json` | VSCode推奨拡張機能 |
-| `setup-git.sh` | Git共通設定スクリプト (user設定除く) |
-| `install.sh` | セットアップスクリプト |
+| ファイル             | 説明                                 |
+| -------------------- | ------------------------------------ |
+| `dotfiles/.zshrc`    | Zsh設定 (oh-my-zsh + powerlevel10k)  |
+| `dotfiles/.p10k.zsh` | Powerlevel10kプロンプト設定          |
+| `config`             | SSH configテンプレート (手動コピー)  |
+| `custom_keymap.txt`  | Google日本語入力カスタムキーマップ   |
+| `extensions.json`    | VSCode推奨拡張機能                   |
+| `setup-git.sh`       | Git共通設定スクリプト (user設定除く) |
+| `install.sh`         | セットアップスクリプト               |
