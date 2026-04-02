@@ -79,12 +79,13 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 
 ## ファイル一覧
 
-| ファイル             | 説明                                 |
-| -------------------- | ------------------------------------ |
-| `dotfiles/.zshrc`    | Zsh設定 (oh-my-zsh + powerlevel10k)  |
-| `dotfiles/.p10k.zsh` | Powerlevel10kプロンプト設定          |
-| `config`             | SSH configテンプレート (手動コピー)  |
-| `custom_keymap.txt`  | Google日本語入力カスタムキーマップ   |
-| `extensions.json`    | VSCode推奨拡張機能                   |
-| `setup-git.sh`       | Git共通設定スクリプト (user設定除く) |
-| `install.sh`         | セットアップスクリプト               |
+| ファイル             | 説明                                                 |
+| -------------------- | ---------------------------------------------------- |
+| `dotfiles/.zshrc`    | Zsh設定 (oh-my-zsh + powerlevel10k)                  |
+| `dotfiles/.p10k.zsh` | Powerlevel10kプロンプト設定                          |
+| `.wslconfig`         | WSL2設定 (`C:\Users\<user>\.wslconfig` に手動コピー) |
+| `config`             | SSH configテンプレート (手動コピー)                  |
+| `custom_keymap.txt`  | Google日本語入力カスタムキーマップ                   |
+| `extensions.json`    | VSCode推奨拡張機能                                   |
+| `setup-git.sh`       | Git共通設定スクリプト (user設定除く)                 |
+| `install.sh`         | セットアップスクリプト                               |
