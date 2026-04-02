@@ -1,3 +1,9 @@
+# Powerlevel10k instant prompt (有効化する場合はコメントを外す)
+# p10k configure を実行すると自動的に追加されます
+# if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+#   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# fi
+
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
@@ -73,7 +79,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
+plugins=(git zsh-autosuggestions you-should-use)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -116,7 +122,118 @@ source $ZSH/oh-my-zsh.sh
 
 # custom alias
 
+alias python="python3"
+alias pip="pip3"
+alias gitlog="git log --oneline"
 alias rebase='f(){ git fetch origin; git rebase origin/$1; git rebase -i origin/$1; unset -f f; }; f'
+
+# custom functions
+
+function vcw() {
+    local dir="$HOME/.vscode-workspaces"
+
+    if ! command -v fzf &> /dev/null; then
+        echo "🤔 fzf が見つかりません。インストールしますか？ (y/n)"
+        read -k 1 "opt"
+        echo
+        if [[ "$opt" == "y" || "$opt" == "Y" ]]; then
+        echo "🚀 Installing fzf..."
+        sudo apt update && sudo apt install -y fzf
+        else
+        echo "❌ 処理を中断しました。fzf が必要です。"
+        return 1
+        fi
+    fi
+
+    if [ ! -d "$dir" ]; then
+        echo "📁 ディレクトリ $dir が見つかりません。"
+        return 1
+    fi
+
+    local selected=$(ls "$dir"/*.code-workspace 2>/dev/null | xargs -n 1 basename | sed 's/\.code-workspace$//' | fzf --height 40% --reverse --border --prompt="Select Workspace > ")
+
+    if [ -n "$selected" ]; then
+        code "$dir/$selected.code-workspace"
+    fi
+}
+
+function delete-vcw() {
+    local dir="$HOME/.vscode-workspaces"
+
+    if ! command -v fzf &> /dev/null; then
+        echo "🤔 fzf が見つかりません。インストールしますか？ (y/n)"
+        read -k 1 "opt"
+        echo
+        if [[ "$opt" == "y" || "$opt" == "Y" ]]; then
+        sudo apt update && sudo apt install -y fzf
+        else
+        return 1
+        fi
+    fi
+
+    if [ ! -d "$dir" ]; then
+        echo "📁 ディレクトリ $dir が見つかりません。"
+        return 1
+    fi
+
+    local selected_names=($(ls "$dir"/*.code-workspace 2>/dev/null | xargs -n 1 basename | sed 's/\.code-workspace$//' | fzf --height 40% --reverse --multi --border --header "Tabで複数選択可 / Enterで確定" --prompt="Delete Workspace > "))
+
+    if [ ${#selected_names[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    echo "⚠️  以下のワークスペースに関連するファイルを削除しますか？"
+    for name in "${selected_names[@]}"; do
+        echo "  - $name"
+    done
+    echo -n "本当に削除しますか？ (y/N): "
+    read -k 1 "confirm"
+    echo
+
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        for name in "${selected_names[@]}"; do
+            rm -f "$dir/$name.code-workspace" "$dir/$name.code-workspace.backup" "$dir/$name.code-workspace.lock"
+
+            local repo_dir="$HOME/$name"
+            if [ -d "$repo_dir/.git" ]; then
+                if ! git -C "$repo_dir" diff --quiet HEAD 2>/dev/null || \
+                    [ -n "$(git -C "$repo_dir" ls-files --others --exclude-standard 2>/dev/null)" ]; then
+                    echo "⛔ Skipped: $name (未コミットの変更があります)"
+                    echo "   確認: git -C \"$repo_dir\" status"
+                    continue
+                fi
+            fi
+
+            rm -rf "$repo_dir"
+            echo "✅ Deleted: $name"
+        done
+    else
+        echo "🚫 キャンセルしました。"
+    fi
+}
+
+function gh-needs-action() {
+  GH_PAGER= gh pr list --assignee @me --state open --json number,title,url,reviews,reviewRequests,author --jq '
+    .[] |
+    . as $pr |
+    $pr.author.login as $author |
+    [$pr.reviewRequests[]?.login] as $rerequested |
+    [
+      $pr.reviews[] | select(
+        .state == "COMMENTED" and
+        .author.login != $author and
+        .author.login != "copilot-pull-request-reviewer" and
+        .author.login != "github-actions"
+      ) | .author.login
+    ] | unique as $commenters |
+    [$commenters[] | select(. as $c | $rerequested | index($c) | not)] as $unaddressed |
+    select(
+      ([$pr.reviews[] | select(.state == "APPROVED")] | length) == 0 and
+      ($unaddressed | length) > 0
+    ) |
+    "#\($pr.number) \($pr.title)\n  \($pr.url)"
+  '
+}
 
 # Load machine-local overrides (not tracked in git)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
