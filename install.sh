@@ -10,6 +10,18 @@ echo "🚀 dotfilesセットアップを開始します..."
 # 現在のディレクトリを取得
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# nanoのインストールとデフォルトエディタに設定
+echo "📦 nanoをインストール中..."
+if ! command -v nano &> /dev/null; then
+    sudo apt update
+    sudo apt install -y nano
+    echo "✅ nanoをインストールしました"
+else
+    echo "✅ nanoは既にインストール済みです"
+fi
+echo "SELECTED_EDITOR=\"/bin/nano\"" > "$HOME/.selected_editor"
+echo "✅ nanoをデフォルトエディタに設定しました"
+
 # zshのインストール
 echo "📦 zshをインストール中..."
 if ! command -v zsh &> /dev/null; then
