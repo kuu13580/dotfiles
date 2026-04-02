@@ -5,6 +5,10 @@
 
 set -e
 
+# apt install時の対話プロンプト(tzdata等)を抑制
+export DEBIAN_FRONTEND=noninteractive
+export TZ=Asia/Tokyo
+
 echo "🚀 dotfilesセットアップを開始します..."
 
 # 現在のディレクトリを取得
@@ -13,8 +17,8 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # nanoのインストールとデフォルトエディタに設定
 echo "📦 nanoをインストール中..."
 if ! command -v nano &> /dev/null; then
-    sudo apt update
-    sudo apt install -y nano
+    sudo -E apt update
+    sudo -E apt install -y nano
     echo "✅ nanoをインストールしました"
 else
     echo "✅ nanoは既にインストール済みです"
@@ -25,8 +29,8 @@ echo "✅ nanoをデフォルトエディタに設定しました"
 # zshのインストール
 echo "📦 zshをインストール中..."
 if ! command -v zsh &> /dev/null; then
-    sudo apt update
-    sudo apt install -y zsh
+    sudo -E apt update
+    sudo -E apt install -y zsh
     echo "✅ zshをインストールしました"
 else
     echo "✅ zshは既にインストール済みです"
@@ -52,14 +56,14 @@ fi
 
 # zshプラグインのインストール
 echo "🔌 zshプラグインをインストール中..."
-sudo apt update
-sudo apt install -y zsh-autosuggestions zsh-syntax-highlighting
+sudo -E apt update
+sudo -E apt install -y zsh-autosuggestions zsh-syntax-highlighting
 echo "✅ zshプラグインをインストールしました"
 
 # fnmのインストール
 echo "📦 fnm (Fast Node Manager) をインストール中..."
 if ! command -v fnm &> /dev/null; then
-    sudo apt install -y unzip
+    sudo -E apt install -y unzip
     curl -fsSL https://fnm.vercel.app/install | bash
     echo "✅ fnmをインストールしました"
 else
@@ -103,6 +107,36 @@ fi
 
 # Git設定の適用
 source "$DOTFILES_DIR/setup-git.sh"
+
+# Dockerのインストール
+if command -v docker &> /dev/null; then
+    echo "✅ Dockerは既にインストール済みです"
+else
+    echo "🐳 Dockerをインストール中..."
+
+    # Add Docker's official GPG key:
+    sudo -E apt update
+    sudo -E apt install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+    # Add the repository to Apt sources:
+    sudo tee /etc/apt/sources.list.d/docker.sources > /dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+    sudo -E apt update
+
+    # install Latest
+    sudo -E apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    echo "✅ Dockerをインストールしました"
+fi
 
 echo ""
 echo "🎉 dotfilesセットアップが完了しました！"
