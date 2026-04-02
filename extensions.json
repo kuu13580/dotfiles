@@ -21,12 +21,15 @@
     "bradlc.vscode-tailwindcss",
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
-    "mylesmuphy.pretty-ts",
-    "yoavbles.pretty-ts-errors",
+    "mylesmurphy.prettify-ts",
+    "yoavbls.pretty-ts-errors",
     "oderwat.indent-rainbow",
     "pkief.material-icon-theme",
     "vitaliymaz.vscode-svg-previewer",
     "streetsidesoftware.code-spell-checker",
-    "pixl-garden.bongocat"
+    "pixl-garden.bongocat",
+    "njpwerner.autodocstring",
+    "ritwickdey.liveserver",
+    "rogalmic.bash-debug"
   ]
 }
