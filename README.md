@@ -19,11 +19,11 @@ cd ~/dotfiles
 
 ### 2. 環境固有設定の分離 (Local Files)
 
-OS固有の設定や秘密情報は`.zshrc`本体に記述せず、`~/.zshrc.local`に分離する。
-`.zshrc`末尾で自動的にsourceされる。`*.local`は`.gitignore`に含まれる。
+OS固有の設定や秘密情報は`.zshrc`本体に記述せず、`~/.local.zshrc`に分離する。
+`.zshrc`末尾で自動的にsourceされる。`.local.*`は`.gitignore`に含まれる。
 
 ```zsh
-# 例: ~/.zshrc.local
+# 例: ~/.local.zshrc
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 ```

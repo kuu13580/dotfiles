@@ -236,7 +236,7 @@ function gh-needs-action() {
 }
 
 # Load machine-local overrides (not tracked in git)
-[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+[[ -f ~/.local.zshrc ]] && source ~/.local.zshrc
 
 #fnm
 eval "$(fnm env --use-on-cd --shell zsh)"
