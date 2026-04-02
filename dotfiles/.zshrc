@@ -121,3 +121,5 @@ alias rebase='f(){ git fetch origin; git rebase origin/$1; git rebase -i origin/
 # Load machine-local overrides (not tracked in git)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
+#fnm
+eval "$(fnm env --use-on-cd --shell zsh)"

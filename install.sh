@@ -44,6 +44,28 @@ sudo apt update
 sudo apt install -y zsh-autosuggestions zsh-syntax-highlighting
 echo "✅ zshプラグインをインストールしました"
 
+# fnmのインストール
+echo "📦 fnm (Fast Node Manager) をインストール中..."
+if ! command -v fnm &> /dev/null; then
+    sudo apt install -y unzip
+    curl -fsSL https://fnm.vercel.app/install | bash
+    echo "✅ fnmをインストールしました"
+else
+    echo "✅ fnmは既にインストール済みです"
+fi
+
+# fnmのPATHを通してNode.js LTSとpnpmをインストール
+export PATH="$HOME/.local/share/fnm:$PATH"
+eval "$(fnm env)"
+echo "📦 Node.js LTS をインストール中..."
+fnm install --lts
+fnm default lts-latest
+echo "✅ Node.js $(node --version) をインストールしました"
+
+echo "📦 pnpm をインストール中..."
+npm install -g pnpm
+echo "✅ pnpm $(pnpm --version) をインストールしました"
+
 # 設定ファイルのシンボリックリンク作成
 echo "🔗 設定ファイルをリンク中..."
 
