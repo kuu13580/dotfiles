@@ -162,7 +162,8 @@ EOF
 
     # install Latest
     sudo -E apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    echo "✅ Dockerをインストールしました"
+    sudo usermod -aG docker $(whoami)
+    echo "✅ Dockerをインストールしました (dockerグループへの追加はログアウト後に反映)"
 fi
 
 echo ""
