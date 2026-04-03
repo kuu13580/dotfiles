@@ -240,3 +240,9 @@ function gh-needs-action() {
 
 #fnm
 eval "$(fnm env --use-on-cd --shell zsh)"
+
+#path
+path=(
+  $HOME/.local/bin
+  $path
+)
