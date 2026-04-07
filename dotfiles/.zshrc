@@ -153,7 +153,16 @@ function vcw() {
     local selected=$(ls "$dir"/*.code-workspace 2>/dev/null | xargs -n 1 basename | sed 's/\.code-workspace$//' | fzf --height 40% --reverse --border --prompt="Select Workspace > ")
 
     if [ -n "$selected" ]; then
-        code "$dir/$selected.code-workspace"
+        local editor=$(echo "code\nzed" | fzf --height 20% --reverse --border --prompt="Editor > ")
+        [ -z "$editor" ] && return 0
+
+        local ws="$dir/$selected.code-workspace"
+        if [ "$editor" = "zed" ]; then
+            local folder=$(jq -r '.folders[0].path' "$ws")
+            zed "$folder"
+        else
+            code "$ws"
+        fi
     fi
 }
 
@@ -238,11 +247,13 @@ function gh-needs-action() {
 # Load machine-local overrides (not tracked in git)
 [[ -f ~/.local.zshrc ]] && source ~/.local.zshrc
 
-#fnm
-eval "$(fnm env --use-on-cd --shell zsh)"
-
 #path
 path=(
   $HOME/.local/bin
+  $HOME/.local/share/fnm(N-/)
   $path
 )
+
+
+#fnm
+eval "$(fnm env --use-on-cd --shell zsh)"
