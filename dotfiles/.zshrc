@@ -201,9 +201,19 @@ function delete-vcw() {
 
     if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
         for name in "${selected_names[@]}"; do
-            rm -f "$dir/$name.code-workspace" "$dir/$name.code-workspace.backup" "$dir/$name.code-workspace.lock"
+            local ws_file="$dir/$name.code-workspace"
+            
+            # JSONから folders[0].path を抽出
+            local repo_dir=$(jq -r '.folders[0].path' "$ws_file" 2>/dev/null)
 
-            local repo_dir="$HOME/$name"
+            # パスが取得できない、または空の場合はスキップ
+            if [[ -z "$repo_dir" || "$repo_dir" == "null" ]]; then
+                echo "⚠️  パスが見つからないため、ワークスペース設定のみ削除します: $name"
+                rm -f "$ws_file" "$ws_file.backup" "$ws_file.lock"
+                continue
+            fi
+
+            # Gitの未コミット変更チェック
             if [ -d "$repo_dir/.git" ]; then
                 if ! git -C "$repo_dir" diff --quiet HEAD 2>/dev/null || \
                     [ -n "$(git -C "$repo_dir" ls-files --others --exclude-standard 2>/dev/null)" ]; then
@@ -213,8 +223,14 @@ function delete-vcw() {
                 fi
             fi
 
-            rm -rf "$repo_dir"
-            echo "✅ Deleted: $name"
+            # ファイルとディレクトリの削除
+            rm -f "$ws_file" "$ws_file.backup" "$ws_file.lock"
+            if [ -d "$repo_dir" ]; then
+                rm -rf "$repo_dir"
+                echo "✅ Deleted: $name (Path: $repo_dir)"
+            else
+                echo "✅ Deleted: $name (Workspace file only, path not found)"
+            fi
         done
     else
         echo "🚫 キャンセルしました。"
