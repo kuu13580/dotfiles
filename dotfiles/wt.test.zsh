@@ -93,6 +93,19 @@ test_new_validation() {
   out="$(wt new -b 2>&1)";               _assert_contains "$out" "requires an argument" "-b without value"
 }
 
+test_claude_arg_validation() {
+  echo "[wt claude arg validation]"
+  # Unknown args are rejected before fzf/claude — no session is launched.
+  local out rc
+  out="$(wt claude badarg 2>&1)";        _assert_contains "$out" "unknown argument" "unknown arg rejected"
+  ( wt claude badarg ) >/dev/null 2>&1; rc=$?
+  _assert_neq "$rc" "0" "unknown arg → nonzero exit"
+  # help documents the -t flag and the idle default
+  out="$(wt help 2>&1)"
+  _assert_contains "$out" "wt claude" "help has wt claude"
+  _assert_contains "$out" "idle"      "help mentions idle default"
+}
+
 test_list_raw_parsing() {
   echo "[_wt_list_raw parsing]"
   local repo="$TMP/repo-list"
@@ -206,6 +219,7 @@ echo
 test_help
 test_unknown_subcmd
 test_new_validation
+test_claude_arg_validation
 test_list_raw_parsing
 test_description_roundtrip
 test_cd_resolution

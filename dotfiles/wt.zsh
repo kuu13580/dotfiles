@@ -310,29 +310,51 @@ function _wt_rm() {
 }
 
 # ---------- wt claude --------------------------------------------------------
+# Default: launch an *idle* background session in the worktree (no prompt) —
+#   just spin up a session; you send the first prompt yourself via Agent View.
+# `-t` (or `--task`): seed the session with an initial task.
+#   `wt claude -t`            → use the worktree's wt.description as the task
+#   `wt claude -t "<task...>"` → use the given text as the task
 function _wt_claude() {
   _wt_check_deps || return 1
+
+  local seed=0 task=""
+  if [[ "${1:-}" == "-t" || "${1:-}" == "--task" ]]; then
+    seed=1; shift
+    task="$*"   # remaining args (may be empty → fall back to description)
+  elif [[ -n "${1:-}" ]]; then
+    echo "wt claude: unknown argument: $1" >&2
+    echo "Usage: wt claude [-t [task]]" >&2
+    return 1
+  fi
+
   if ! command -v claude >/dev/null 2>&1; then
     echo "wt claude: 'claude' command not found in PATH" >&2
     return 1
   fi
+
   local sel
   sel="$(_wt_fzf_select 'Claude Worktree > ')" || return 1
   [[ -z "$sel" ]] && return 0
 
-  local desc
-  desc="$(git -C "$sel" config --worktree wt.description 2>/dev/null)"
-  if [[ -z "$desc" ]]; then
-    printf 'Description is empty. Task (one line): '
-    read -r desc
-    if [[ -z "$desc" ]]; then
-      echo "wt claude: aborted (empty task)"
-      return 0
+  if (( seed )); then
+    if [[ -z "$task" ]]; then
+      task="$(git -C "$sel" config --worktree wt.description 2>/dev/null)"
     fi
+    if [[ -z "$task" ]]; then
+      printf 'Task (description is empty): '
+      read -r task
+      if [[ -z "$task" ]]; then
+        echo "wt claude: aborted (empty task)"
+        return 0
+      fi
+    fi
+    echo "wt claude: cd '$sel' && claude --bg \"$task\""
+    ( cd "$sel" && claude --bg "$task" )
+  else
+    echo "wt claude: cd '$sel' && claude --bg   (idle — send a prompt to start)"
+    ( cd "$sel" && claude --bg )
   fi
-
-  echo "wt claude: cd '$sel' && claude --bg \"$desc\""
-  ( cd "$sel" && claude --bg "$desc" )
 }
 
 # ---------- wt cd (must remain a function for cwd propagation) ---------------
@@ -386,7 +408,10 @@ USAGE
                                        ($EDITOR if set, else inline prompt)
   wt rm                              fzf multi-select → remove worktree(s)
                                        branch deletion is confirmed separately
-  wt claude                          fzf select → claude --bg "<wt.description>"
+  wt claude [-t [task]]              fzf select → claude --bg in the worktree
+                                       (no -t)      idle session (send prompt yourself)
+                                       -t           seed task = wt.description
+                                       -t "<task>"  seed task = given text
   wt cd [<name>]                     cd to worktree (zsh function only)
                                        no arg → fzf select
   wt help                            show this help

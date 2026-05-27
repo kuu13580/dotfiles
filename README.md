@@ -87,7 +87,7 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 | `wt new -b <branch> <dir> [base] [-d desc]` | 新規作成 + 用途 (description) を記録        |
 | `wt ls`                                      | 用途付き一覧                               |
 | `wt set` / `wt rm`                           | 用途の編集 / worktree 削除 (fzf)           |
-| `wt claude`                                  | `claude --bg` で Agent View に投入          |
+| `wt claude [-t [task]]`                      | `claude --bg` で起動 (既定 idle、`-t` でタスク投入) |
 | `wt cd [<name>]`                             | worktree へ `cd`                           |
 
 各 worktree の「何用か」は `git config --worktree wt.description` に保存。全コマンドの詳細は `wt help`、運用ルール (Claude 連携含む) は [wt-manager プラグイン](https://github.com/m-tojo-safie/m-tojo-marketplace/tree/main/plugins/wt-manager) を参照。
