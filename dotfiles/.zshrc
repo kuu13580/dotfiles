@@ -260,6 +260,10 @@ function gh-needs-action() {
   '
 }
 
+# wt-manager: load worktree helper functions from same directory as this .zshrc
+# (works through symlinks; ${${(%):-%x}:A:h} = resolved absolute dir of this file)
+[[ -f "${${(%):-%x}:A:h}/wt.zsh" ]] && source "${${(%):-%x}:A:h}/wt.zsh"
+
 # Load machine-local overrides (not tracked in git)
 [[ -f ~/.local.zshrc ]] && source ~/.local.zshrc
 
