@@ -46,6 +46,12 @@ if [[ ! -f "$THIS_DIR/wt.zsh" ]]; then
 fi
 source "$THIS_DIR/wt.zsh"
 
+# wt.zsh は internal ヘルパ (_wt_*) を wt() 内で定義し終了時に破棄する。
+# ホワイトボックステストはヘルパを直接呼ぶため、WT_KEEP_INTERNAL=1 で破棄を抑止し、
+# 一度 wt を呼んでヘルパをグローバルへ展開しておく。
+export WT_KEEP_INTERNAL=1
+wt help >/dev/null 2>&1
+
 typeset -g TMP="$(mktemp -d -t wt-test.XXXXXX)"
 trap "rm -rf '$TMP'" EXIT
 

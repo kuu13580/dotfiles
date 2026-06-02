@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ============================================================================
-# wt.zsh - git worktree manager (zsh functions)
+# wt.zsh - git worktree manager (single public zsh function)
 #
 # Canonical : ~/dotfiles/dotfiles/wt.zsh
 # Snapshot  : ${CLAUDE_PLUGIN_ROOT}/skills/wt-manager/scripts/wt.zsh
@@ -8,27 +8,26 @@
 #
 # Subcommands: wt | wt new | wt ls | wt set | wt rm | wt claude | wt cd
 # Specs     : plugins/wt-manager/REQUIREMENTS.md / skills/wt-manager/SKILL.md
+#
+# 設計メモ (内包方式):
+#   トップレベルに公開する関数は `wt` ただ1つ。内部ヘルパ (_wt_*) は wt() の
+#   実行時にこの関数内で定義し、終了時に `unfunction -m '_wt_*'` で破棄する。狙い:
+#     1. 対話シェルの名前空間・タブ補完を internal ヘルパで汚さない (公開ゼロ)
+#     2. Claude Code のシェルスナップショットは「先頭 `_` のトップレベル関数」を
+#        除外するため、_wt_* をトップレベルに置くと Claude の Bash から wt new 等が
+#        動かない。wt() 内包なら snapshot に載るのは wt だけで、wt 経由で全
+#        サブコマンドが動作する
+#   テスト用: 環境変数 WT_KEEP_INTERNAL=1 のときは破棄をスキップし、一度 wt を
+#   呼べば _wt_* がグローバルに残る (ホワイトボックステストから直接呼べる)。
 # ============================================================================
 
-# ---------- main dispatcher --------------------------------------------------
 function wt() {
   emulate -L zsh
-  local cmd="${1:-}"
-  [[ -n "$cmd" ]] && shift
-  case "$cmd" in
-    "")              _wt_default      "$@" ;;
-    new)             _wt_new          "$@" ;;
-    ls|list)         _wt_ls           "$@" ;;
-    set)             _wt_set          "$@" ;;
-    rm|remove)       _wt_rm           "$@" ;;
-    claude)          _wt_claude       "$@" ;;
-    cd)              _wt_cd           "$@" ;;
-    -h|--help|help)  _wt_help              ;;
-    *) echo "wt: unknown subcommand '$cmd'" >&2; _wt_help >&2; return 1 ;;
-  esac
-}
 
-# ---------- internal helpers -------------------------------------------------
+# ======================= internal helpers (per-invocation) ==================
+# 以降のヘルパは wt 実行時に定義され、関数末尾で破棄される (WT_KEEP_INTERNAL で保持)。
+# ヒアドキュメント終端マーカーを行頭に保つため、ヘルパ本体はインデントしない。
+
 function _wt_check_deps() {
   local missing=()
   local c
@@ -357,7 +356,7 @@ function _wt_claude() {
   fi
 }
 
-# ---------- wt cd (must remain a function for cwd propagation) ---------------
+# ---------- wt cd (cwd propagates because wt itself is a function) -----------
 function _wt_cd() {
   if (( $# == 0 )); then
     _wt_check_deps || return 1
@@ -395,7 +394,7 @@ function _wt_cd() {
 # ---------- wt help ----------------------------------------------------------
 function _wt_help() {
   cat <<'EOF'
-wt - git worktree manager (zsh functions)
+wt - git worktree manager (zsh function)
 
 USAGE
   wt                                 fzf select → pick editor (code/zed) → open
@@ -425,4 +424,25 @@ EXAMPLES
   git config wt.baseRef origin/develop      # set default base for `wt new`
   wt cd task-foo                            # cd to worktree by directory name
 EOF
+}
+
+# ================================ dispatch ==================================
+  local cmd="${1:-}"
+  [[ -n "$cmd" ]] && shift
+  local rc=0
+  case "$cmd" in
+    "")              _wt_default      "$@"; rc=$? ;;
+    new)             _wt_new          "$@"; rc=$? ;;
+    ls|list)         _wt_ls           "$@"; rc=$? ;;
+    set)             _wt_set          "$@"; rc=$? ;;
+    rm|remove)       _wt_rm           "$@"; rc=$? ;;
+    claude)          _wt_claude       "$@"; rc=$? ;;
+    cd)              _wt_cd           "$@"; rc=$? ;;
+    -h|--help|help)  _wt_help; rc=$? ;;
+    *) echo "wt: unknown subcommand '$cmd'" >&2; _wt_help >&2; rc=1 ;;
+  esac
+
+  # cleanup: 対話シェルに internal ヘルパを残さない (テスト時は WT_KEEP_INTERNAL で保持)
+  [[ -n "${WT_KEEP_INTERNAL:-}" ]] || unfunction -m '_wt_*' 2>/dev/null
+  return $rc
 }
