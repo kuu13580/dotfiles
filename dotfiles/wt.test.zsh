@@ -101,11 +101,16 @@ test_new_validation() {
 
 test_claude_arg_validation() {
   echo "[wt claude arg validation]"
-  # Unknown args are rejected before fzf/claude — no session is launched.
+  # Unknown options are rejected before fzf/claude — no session is launched.
   local out rc
-  out="$(wt claude badarg 2>&1)";        _assert_contains "$out" "unknown argument" "unknown arg rejected"
-  ( wt claude badarg ) >/dev/null 2>&1; rc=$?
-  _assert_neq "$rc" "0" "unknown arg → nonzero exit"
+  out="$(wt claude --bogus 2>&1)";       _assert_contains "$out" "unknown argument" "unknown option rejected"
+  ( wt claude --bogus ) >/dev/null 2>&1; rc=$?
+  _assert_neq "$rc" "0" "unknown option → nonzero exit"
+  # positional <name> resolves against worktrees (before the claude-command check)
+  local repo="$TMP/repo-claude"
+  _mkrepo "$repo"
+  out="$(cd "$repo" && wt claude nonexistent-wt 2>&1)"
+  _assert_contains "$out" "no worktree matched" "unmatched name rejected"
   # help documents the -t flag and the idle default
   out="$(wt help 2>&1)"
   _assert_contains "$out" "wt claude" "help has wt claude"
@@ -195,6 +200,77 @@ test_resolve_target_parent() {
   _assert_eq "$got" "/other/somewhere" "parent: outside HOME"
 }
 
+test_resolve_name() {
+  echo "[_wt_resolve_name]"
+  local repo="$TMP/repo-resolve"
+  _mkrepo "$repo"
+  _addwt "$repo" "branch-res" "$TMP/res-target"
+
+  local got
+  got="$(cd "$repo" && _wt_resolve_name res-target)"
+  _assert_eq "$got" "$TMP/res-target" "basename match"
+  got="$(cd "$repo" && _wt_resolve_name "$TMP/res-target")"
+  _assert_eq "$got" "$TMP/res-target" "exact path match"
+  ( cd "$repo" && _wt_resolve_name nonexistent-wt ) >/dev/null 2>&1
+  _assert_neq "$?" "0" "no match → nonzero"
+}
+
+test_set_noninteractive() {
+  echo "[wt set non-interactive]"
+  local repo="$TMP/repo-set"
+  _mkrepo "$repo"
+  _addwt "$repo" "branch-set" "$TMP/set-target"
+
+  local out got
+  out="$(cd "$repo" && wt set set-target "PR#42 review")"
+  _assert_contains "$out" "updated" "set <name> <desc> prints updated"
+  got="$(git -C "$TMP/set-target" config --worktree wt.description)"
+  _assert_eq "$got" "PR#42 review" "description written"
+
+  out="$(cd "$repo" && wt set set-target "")"
+  _assert_contains "$out" "cleared" "empty desc clears"
+  got="$(git -C "$TMP/set-target" config --worktree wt.description 2>/dev/null)"
+  _assert_eq "$got" "" "description cleared"
+
+  out="$(cd "$repo" && wt set nonexistent-wt "x" 2>&1)"
+  _assert_contains "$out" "no worktree matched" "unmatched name rejected"
+  out="$(cd "$repo" && wt set a b c 2>&1)"
+  _assert_contains "$out" "Usage:" "too many args → usage"
+}
+
+test_rm_noninteractive() {
+  echo "[wt rm non-interactive]"
+  local repo="$TMP/repo-rm"
+  _mkrepo "$repo"
+  _addwt "$repo" "branch-rm-keep" "$TMP/rm-keep"
+  _addwt "$repo" "branch-rm-del"  "$TMP/rm-del"
+
+  local out
+  # -y: remove worktree, keep branch
+  out="$(cd "$repo" && wt rm rm-keep -y 2>&1)"
+  _assert_contains "$out" "removed" "rm <name> -y removes"
+  if [[ -d "$TMP/rm-keep" ]]; then _fail "worktree dir gone"; else _pass "worktree dir gone"; fi
+  if git -C "$repo" show-ref --verify -q refs/heads/branch-rm-keep; then
+    _pass "branch kept without -b"
+  else
+    _fail "branch kept without -b"
+  fi
+
+  # -y -b: remove worktree and its branch
+  out="$(cd "$repo" && wt rm rm-del -y -b 2>&1)"
+  _assert_contains "$out" "branch deleted" "rm -y -b reports branch deletion"
+  if git -C "$repo" show-ref --verify -q refs/heads/branch-rm-del; then
+    _fail "branch deleted with -b"
+  else
+    _pass "branch deleted with -b"
+  fi
+
+  out="$(cd "$repo" && wt rm nonexistent-wt -y 2>&1)"
+  _assert_contains "$out" "no worktree matched" "unmatched name rejected"
+  out="$(cd "$repo" && wt rm -x 2>&1)"
+  _assert_contains "$out" "unknown option" "unknown option rejected"
+}
+
 test_new_happy_path() {
   echo "[wt new end-to-end (parent pattern)]"
   local repo="$TMP/repo-new"
@@ -231,6 +307,9 @@ test_description_roundtrip
 test_cd_resolution
 test_ls_format
 test_resolve_target_parent
+test_resolve_name
+test_set_noninteractive
+test_rm_noninteractive
 test_new_happy_path
 
 echo

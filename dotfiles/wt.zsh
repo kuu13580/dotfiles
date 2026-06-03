@@ -79,6 +79,30 @@ function _wt_list_raw() {
   '
 }
 
+# Resolve a worktree by name: basename match first, then exact/suffix path match.
+# Prints the absolute path; returns 1 if no worktree matched.
+function _wt_resolve_name() {
+  local name="$1"
+  local found=""
+
+  while IFS=$'\t' read -r wt_path wt_branch wt_head; do
+    if [[ "$(basename "$wt_path")" == "$name" ]]; then
+      found="$wt_path"; break
+    fi
+  done < <(_wt_list_raw)
+
+  if [[ -z "$found" ]]; then
+    while IFS=$'\t' read -r wt_path wt_branch wt_head; do
+      if [[ "$wt_path" == "$name" || "$wt_path" == *"/$name" ]]; then
+        found="$wt_path"; break
+      fi
+    done < <(_wt_list_raw)
+  fi
+
+  [[ -z "$found" ]] && return 1
+  print -r -- "$found"
+}
+
 # POSIX-sh preview script used by fzf. fzf substitutes {1} with the (quoted) path.
 function _wt_fzf_preview_cmd() {
   cat <<'PREVIEW_SH'
@@ -223,12 +247,40 @@ function _wt_ls() {
   } | column -t -s $'\t'
 }
 
-# ---------- wt set -----------------------------------------------------------
+# ---------- wt set [<name>] ["<desc>"] ---------------------------------------
+#   no args          → fzf select → $EDITOR / inline prompt (interactive)
+#   <name>           → skip fzf → $EDITOR / inline prompt
+#   <name> "<desc>"  → fully non-interactive (empty "" clears the description)
 function _wt_set() {
   _wt_check_deps || return 1
+
+  if (( $# > 2 )); then
+    echo "Usage: wt set [<name>] [\"<desc>\"]" >&2
+    return 1
+  fi
+
   local sel
-  sel="$(_wt_fzf_select 'Set Description > ')" || return 1
-  [[ -z "$sel" ]] && return 0
+  if (( $# >= 1 )); then
+    sel="$(_wt_resolve_name "$1")" || {
+      echo "wt set: no worktree matched '$1'" >&2
+      return 1
+    }
+  else
+    sel="$(_wt_fzf_select 'Set Description > ')" || return 1
+    [[ -z "$sel" ]] && return 0
+  fi
+
+  if (( $# == 2 )); then
+    _wt_ensure_worktree_config "$sel"
+    if [[ -z "$2" ]]; then
+      git -C "$sel" config --worktree --unset wt.description 2>/dev/null
+      echo "wt set: cleared description for $(basename "$sel")"
+    else
+      git -C "$sel" config --worktree wt.description "$2"
+      echo "wt set: updated $(basename "$sel")"
+    fi
+    return 0
+  fi
 
   local current
   current="$(git -C "$sel" config --worktree wt.description 2>/dev/null)"
@@ -263,30 +315,67 @@ function _wt_set() {
   fi
 }
 
-# ---------- wt rm ------------------------------------------------------------
+# ---------- wt rm [<name>...] [-y] [-b] --------------------------------------
+#   no names → fzf multi-select (interactive)
+#   <name>...→ skip fzf
+#   -y       → skip "Proceed?" confirmation (required for non-interactive use)
+#   -b       → also delete branches (without -b in -y mode, branches are kept)
 function _wt_rm() {
   _wt_check_deps || return 1
-  local selected
-  selected="$(_wt_fzf_select 'Remove Worktree > ' multi)" || return 1
-  [[ -z "$selected" ]] && return 0
 
-  local -a paths
-  paths=("${(@f)selected}")
+  local auto=0 branch_flag=0
+  local -a names=()
+  while (( $# > 0 )); do
+    case "$1" in
+      -y|--yes)    auto=1; shift ;;
+      -b|--branch) branch_flag=1; shift ;;
+      -*) echo "wt rm: unknown option: $1" >&2
+          echo "Usage: wt rm [<name>...] [-y] [-b]" >&2
+          return 1 ;;
+      *) names+=("$1"); shift ;;
+    esac
+  done
+
+  local -a paths=()
+  local p
+  if (( ${#names[@]} > 0 )); then
+    local n
+    for n in "${names[@]}"; do
+      p="$(_wt_resolve_name "$n")" || {
+        echo "wt rm: no worktree matched '$n'" >&2
+        return 1
+      }
+      paths+=("$p")
+    done
+  else
+    local selected
+    selected="$(_wt_fzf_select 'Remove Worktree > ' multi)" || return 1
+    [[ -z "$selected" ]] && return 0
+    paths=("${(@f)selected}")
+  fi
 
   echo "wt rm: about to remove:"
-  local p
   for p in "${paths[@]}"; do
     echo "  - $p"
   done
-  printf 'Proceed? (y/N): '
-  local confirm; read -r confirm
-  if [[ "$confirm" != [yY]* ]]; then
-    echo "wt rm: aborted"
-    return 0
-  fi
 
-  printf 'Also delete branches? (y/N): '
-  local del_branch; read -r del_branch
+  local del_branch=""
+  if (( auto )); then
+    (( branch_flag )) && del_branch="y"
+  else
+    printf 'Proceed? (y/N): '
+    local confirm; read -r confirm
+    if [[ "$confirm" != [yY]* ]]; then
+      echo "wt rm: aborted"
+      return 0
+    fi
+    if (( branch_flag )); then
+      del_branch="y"
+    else
+      printf 'Also delete branches? (y/N): '
+      read -r del_branch
+    fi
+  fi
 
   for p in "${paths[@]}"; do
     local branch=""
@@ -308,14 +397,20 @@ function _wt_rm() {
   done
 }
 
-# ---------- wt claude --------------------------------------------------------
+# ---------- wt claude [<name>] [-t [task]] -----------------------------------
 # Default: launch an *idle* background session in the worktree (no prompt) —
 #   just spin up a session; you send the first prompt yourself via Agent View.
+# `<name>`: skip fzf and target the worktree by name (non-interactive).
 # `-t` (or `--task`): seed the session with an initial task.
 #   `wt claude -t`            → use the worktree's wt.description as the task
 #   `wt claude -t "<task...>"` → use the given text as the task
 function _wt_claude() {
   _wt_check_deps || return 1
+
+  local name=""
+  if [[ -n "${1:-}" && "$1" != -* ]]; then
+    name="$1"; shift
+  fi
 
   local seed=0 task=""
   if [[ "${1:-}" == "-t" || "${1:-}" == "--task" ]]; then
@@ -323,8 +418,16 @@ function _wt_claude() {
     task="$*"   # remaining args (may be empty → fall back to description)
   elif [[ -n "${1:-}" ]]; then
     echo "wt claude: unknown argument: $1" >&2
-    echo "Usage: wt claude [-t [task]]" >&2
+    echo "Usage: wt claude [<name>] [-t [task]]" >&2
     return 1
+  fi
+
+  local sel
+  if [[ -n "$name" ]]; then
+    sel="$(_wt_resolve_name "$name")" || {
+      echo "wt claude: no worktree matched '$name'" >&2
+      return 1
+    }
   fi
 
   if ! command -v claude >/dev/null 2>&1; then
@@ -332,9 +435,10 @@ function _wt_claude() {
     return 1
   fi
 
-  local sel
-  sel="$(_wt_fzf_select 'Claude Worktree > ')" || return 1
-  [[ -z "$sel" ]] && return 0
+  if [[ -z "$sel" ]]; then
+    sel="$(_wt_fzf_select 'Claude Worktree > ')" || return 1
+    [[ -z "$sel" ]] && return 0
+  fi
 
   if (( seed )); then
     if [[ -z "$task" ]]; then
@@ -367,27 +471,11 @@ function _wt_cd() {
     return $?
   fi
 
-  local name="$1"
-  local found=""
-
-  while IFS=$'\t' read -r wt_path wt_branch wt_head; do
-    if [[ "$(basename "$wt_path")" == "$name" ]]; then
-      found="$wt_path"; break
-    fi
-  done < <(_wt_list_raw)
-
-  if [[ -z "$found" ]]; then
-    while IFS=$'\t' read -r wt_path wt_branch wt_head; do
-      if [[ "$wt_path" == "$name" || "$wt_path" == *"/$name" ]]; then
-        found="$wt_path"; break
-      fi
-    done < <(_wt_list_raw)
-  fi
-
-  if [[ -z "$found" ]]; then
-    echo "wt cd: no worktree matched '$name'" >&2
+  local found
+  found="$(_wt_resolve_name "$1")" || {
+    echo "wt cd: no worktree matched '$1'" >&2
     return 1
-  fi
+  }
   cd -- "$found"
 }
 
@@ -403,11 +491,16 @@ USAGE
                                        <dir> must be a directory NAME only
                                        [base] omitted → git config wt.baseRef → HEAD
   wt ls                              list worktrees with metadata
-  wt set                             fzf select → edit wt.description
-                                       ($EDITOR if set, else inline prompt)
-  wt rm                              fzf multi-select → remove worktree(s)
-                                       branch deletion is confirmed separately
-  wt claude [-t [task]]              fzf select → claude --bg in the worktree
+  wt set [<name>] ["<desc>"]         edit/set wt.description
+                                       no args → fzf select + $EDITOR/prompt
+                                       <name>  → skip fzf (then $EDITOR/prompt)
+                                       <name> "<desc>" → non-interactive ("" clears)
+  wt rm [<name>...] [-y] [-b]        remove worktree(s)
+                                       no names → fzf multi-select
+                                       -y  skip confirmation (non-interactive)
+                                       -b  also delete branches
+  wt claude [<name>] [-t [task]]     claude --bg in the worktree
+                                       <name>  → skip fzf (non-interactive)
                                        (no -t)      idle session (send prompt yourself)
                                        -t           seed task = wt.description
                                        -t "<task>"  seed task = given text
