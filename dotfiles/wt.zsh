@@ -230,19 +230,38 @@ function _wt_new() {
   echo "wt new: created $target_path"
 }
 
-# ---------- wt ls ------------------------------------------------------------
+# ---------- wt ls [-p] --------------------------------------------------------
+#   -p / --path: add absolute PATH column (e.g. to feed EnterWorktree({path}))
 function _wt_ls() {
   _wt_check_deps || return 1
+
+  local show_path=0
+  case "${1:-}" in
+    "") ;;
+    -p|--path) show_path=1 ;;
+    *) echo "wt ls: unknown option: $1" >&2
+       echo "Usage: wt ls [-p]" >&2
+       return 1 ;;
+  esac
+
   local name age desc
   {
-    printf 'DIR\tBRANCH\tAGE\tDESC\n'
+    if (( show_path )); then
+      printf 'DIR\tBRANCH\tAGE\tPATH\tDESC\n'
+    else
+      printf 'DIR\tBRANCH\tAGE\tDESC\n'
+    fi
     _wt_list_raw | while IFS=$'\t' read -r wt_path wt_branch wt_head; do
       name="$(basename "$wt_path")"
       age="$(git -C "$wt_path" log -1 --format='%cr' 2>/dev/null \
              | sed -E 's/ ago$//; s/ year(s)?/y/; s/ month(s)?/mo/; s/ week(s)?/w/; s/ day(s)?/d/; s/ hour(s)?/h/; s/ minute(s)?/m/; s/ second(s)?/s/' \
              | tr -d ' ')"
       desc="$(git -C "$wt_path" config --worktree wt.description 2>/dev/null | head -1)"
-      printf '%s\t%s\t%s\t%s\n' "$name" "${wt_branch:-?}" "${age:-?}" "${desc:-(no description)}"
+      if (( show_path )); then
+        printf '%s\t%s\t%s\t%s\t%s\n' "$name" "${wt_branch:-?}" "${age:-?}" "$wt_path" "${desc:-(no description)}"
+      else
+        printf '%s\t%s\t%s\t%s\n' "$name" "${wt_branch:-?}" "${age:-?}" "${desc:-(no description)}"
+      fi
     done
   } | column -t -s $'\t'
 }
@@ -490,7 +509,8 @@ USAGE
                                      create new worktree (records description)
                                        <dir> must be a directory NAME only
                                        [base] omitted → git config wt.baseRef → HEAD
-  wt ls                              list worktrees with metadata
+  wt ls [-p]                         list worktrees with metadata
+                                       -p  add absolute PATH column
   wt set [<name>] ["<desc>"]         edit/set wt.description
                                        no args → fzf select + $EDITOR/prompt
                                        <name>  → skip fzf (then $EDITOR/prompt)

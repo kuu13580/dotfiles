@@ -179,6 +179,13 @@ test_ls_format() {
   _assert_contains "$out" "DESC"             "header has DESC"
   _assert_contains "$out" "feature/ls-test"  "branch shown"
   _assert_contains "$out" "test desc"        "description shown"
+
+  # -p adds absolute PATH column
+  out="$(cd "$repo" && wt ls -p)"
+  _assert_contains "$out" "PATH"             "header has PATH with -p"
+  _assert_contains "$out" "$TMP/ls-target"   "absolute path shown with -p"
+  out="$(cd "$repo" && wt ls -x 2>&1)"
+  _assert_contains "$out" "unknown option"   "unknown option rejected"
 }
 
 test_resolve_target_parent() {
