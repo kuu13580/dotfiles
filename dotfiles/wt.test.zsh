@@ -106,15 +106,20 @@ test_claude_arg_validation() {
   out="$(wt claude --bogus 2>&1)";       _assert_contains "$out" "unknown argument" "unknown option rejected"
   ( wt claude --bogus ) >/dev/null 2>&1; rc=$?
   _assert_neq "$rc" "0" "unknown option → nonzero exit"
+  # -n requires a value (rejected before fzf/claude)
+  out="$(wt claude -n 2>&1)";            _assert_contains "$out" "requires a name" "-n without value rejected"
+  ( wt claude -n ) >/dev/null 2>&1; rc=$?
+  _assert_neq "$rc" "0" "-n without value → nonzero exit"
   # positional <name> resolves against worktrees (before the claude-command check)
   local repo="$TMP/repo-claude"
   _mkrepo "$repo"
   out="$(cd "$repo" && wt claude nonexistent-wt 2>&1)"
   _assert_contains "$out" "no worktree matched" "unmatched name rejected"
-  # help documents the -t flag and the idle default
+  # help documents the -n flag and the idle default
   out="$(wt help 2>&1)"
-  _assert_contains "$out" "wt claude" "help has wt claude"
-  _assert_contains "$out" "idle"      "help mentions idle default"
+  _assert_contains "$out" "wt claude"  "help has wt claude"
+  _assert_contains "$out" "idle"       "help mentions idle default"
+  _assert_contains "$out" "-n <label>" "help documents -n"
 }
 
 test_list_raw_parsing() {

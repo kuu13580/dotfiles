@@ -426,20 +426,33 @@ function _wt_rm() {
 function _wt_claude() {
   _wt_check_deps || return 1
 
-  local name=""
-  if [[ -n "${1:-}" && "$1" != -* ]]; then
-    name="$1"; shift
-  fi
-
-  local seed=0 task=""
-  if [[ "${1:-}" == "-t" || "${1:-}" == "--task" ]]; then
-    seed=1; shift
-    task="$*"   # remaining args (may be empty → fall back to description)
-  elif [[ -n "${1:-}" ]]; then
-    echo "wt claude: unknown argument: $1" >&2
-    echo "Usage: wt claude [<name>] [-t [task]]" >&2
-    return 1
-  fi
+  local name="" label="" label_set=0
+  while (( $# )); do
+    case "$1" in
+      -n|--name)
+        shift
+        if [[ -z "${1:-}" ]]; then
+          echo "wt claude: -n requires a name" >&2
+          return 1
+        fi
+        label="$1"; label_set=1; shift
+        ;;
+      -*)
+        echo "wt claude: unknown argument: $1" >&2
+        echo "Usage: wt claude [<name>] [-n <label>]" >&2
+        return 1
+        ;;
+      *)
+        if [[ -z "$name" ]]; then
+          name="$1"; shift
+        else
+          echo "wt claude: unexpected argument: $1" >&2
+          echo "Usage: wt claude [<name>] [-n <label>]" >&2
+          return 1
+        fi
+        ;;
+    esac
+  done
 
   local sel
   if [[ -n "$name" ]]; then
@@ -459,24 +472,14 @@ function _wt_claude() {
     [[ -z "$sel" ]] && return 0
   fi
 
-  if (( seed )); then
-    if [[ -z "$task" ]]; then
-      task="$(git -C "$sel" config --worktree wt.description 2>/dev/null)"
-    fi
-    if [[ -z "$task" ]]; then
-      printf 'Task (description is empty): '
-      read -r task
-      if [[ -z "$task" ]]; then
-        echo "wt claude: aborted (empty task)"
-        return 0
-      fi
-    fi
-    echo "wt claude: cd '$sel' && claude --bg \"$task\""
-    ( cd "$sel" && claude --bg "$task" )
-  else
-    echo "wt claude: cd '$sel' && claude --bg   (idle — send a prompt to start)"
-    ( cd "$sel" && claude --bg )
+  # 表示名: -n 明示 > wt.description > ディレクトリ名
+  if (( ! label_set )); then
+    label="$(git -C "$sel" config --worktree wt.description 2>/dev/null)"
+    label="${label:-${sel:t}}"
   fi
+
+  echo "wt claude: cd '$sel' && claude --bg -n \"$label\"   (idle — send a prompt to start)"
+  ( cd "$sel" && claude --bg -n "$label" )
 }
 
 # ---------- wt cd (cwd propagates because wt itself is a function) -----------
@@ -519,11 +522,10 @@ USAGE
                                        no names → fzf multi-select
                                        -y  skip confirmation (non-interactive)
                                        -b  also delete branches
-  wt claude [<name>] [-t [task]]     claude --bg in the worktree
-                                       <name>  → skip fzf (non-interactive)
-                                       (no -t)      idle session (send prompt yourself)
-                                       -t           seed task = wt.description
-                                       -t "<task>"  seed task = given text
+  wt claude [<name>] [-n <label>]    claude --bg in the worktree (idle session)
+                                       <name>      → skip fzf (non-interactive)
+                                       -n <label>  → session display name
+                                                     (default: wt.description, else dir name)
   wt cd [<name>]                     cd to worktree (zsh function only)
                                        no arg → fzf select
   wt help                            show this help
