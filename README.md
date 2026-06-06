@@ -94,6 +94,15 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 
 テスト: `zsh dotfiles/wt.test.zsh`
 
+## Claude Code プラグイン
+
+`plugins/` に個人用の Claude Code プラグインを置き、`.claude-plugin/marketplace.json` でマーケットプレイスとして束ねる。
+
+- `plugins/` — 各プラグイン本体 (skill / agent / hook / script)。プラグインごとに README を同梱。
+- `.claude-plugin/marketplace.json` — プラグイン一覧を登録するマーケットプレイス定義。
+
+各プラグインの概要は [plugins/README.md](plugins/README.md) を参照。
+
 ## ファイル一覧
 
 | ファイル             | 説明                                                 |

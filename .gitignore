@@ -2,6 +2,7 @@
 .local.*
 
 # Claude Code
-.claude/
+.claude/*
 !.claude/settings.json
 !.claude/CLAUDE.md
+!.claude/rules/
