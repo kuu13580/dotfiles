@@ -18,6 +18,11 @@
       "name": "html-output-generator",
       "source": "./plugins/html-output-generator",
       "description": "会話内容やmarkdownをsonnetサブエージェント経由でシンプルなHTMLに変換"
+    },
+    {
+      "name": "wt-manager",
+      "source": "./plugins/wt-manager",
+      "description": "git worktreeをfzfベースのwt系コマンドで管理し、各worktreeの用途をgit configに記録。Claudeにgit worktree add直叩きを避けwt new経由で作成させる"
     }
   ]
 }

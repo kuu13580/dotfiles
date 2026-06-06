@@ -1,0 +1,17 @@
+{
+  "description": "EnterWorktree の name モード(新規worktree作成)と ExitWorktree の remove を deny し、wt 運用フロー(wt new → EnterWorktree path / wt rm)へ誘導する",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "EnterWorktree|ExitWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/guard-worktree.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
