@@ -8,6 +8,11 @@
       "name": "sparkline-statusline",
       "source": "./plugins/sparkline-statusline",
       "description": "スパークラインゲージでコンテキスト使用率・レートリミットを表示するステータスライン"
+    },
+    {
+      "name": "pr-bot-watcher",
+      "source": "./plugins/pr-bot-watcher",
+      "description": "GitHub PRのbotレビューコメントを3分間隔で監視し、検出時点で自己停止してユーザーに修正要否を提案する"
     }
   ]
 }

@@ -1,0 +1,6 @@
+{
+  "name": "pr-bot-watcher",
+  "description": "GitHub PRのbotレビューコメントを3分間隔で監視し、検出時点でcronを自己削除してユーザーに修正要否を確認する",
+  "version": "0.2.2",
+  "author": { "name": "m-tojo" }
+}
