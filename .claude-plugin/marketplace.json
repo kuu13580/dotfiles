@@ -1,0 +1,13 @@
+{
+  "name": "kuu13580-marketplace",
+  "owner": {
+    "name": "kuu13580"
+  },
+  "plugins": [
+    {
+      "name": "sparkline-statusline",
+      "source": "./plugins/sparkline-statusline",
+      "description": "スパークラインゲージでコンテキスト使用率・レートリミットを表示するステータスライン"
+    }
+  ]
+}

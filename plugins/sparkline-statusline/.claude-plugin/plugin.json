@@ -1,0 +1,6 @@
+{
+  "name": "sparkline-statusline",
+  "description": "スパークラインゲージでコンテキスト使用率・レートリミットを表示するステータスライン",
+  "version": "1.0.0",
+  "author": { "name": "m-tojo" }
+}
