@@ -1,0 +1,6 @@
+{
+  "name": "html-output-generator",
+  "description": "会話内容やmarkdownファイルをシンプルで見やすいHTMLに変換する。重い生成処理はsonnetサブエージェントに委譲してトークン消費を抑える。",
+  "version": "1.0.0",
+  "author": { "name": "m-tojo" }
+}
