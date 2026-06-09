@@ -97,6 +97,16 @@ test_new_validation() {
   out="$(wt new -b foo sub/dir 2>&1)";   _assert_contains "$out" "directory NAME only" "relative path rejected"
   out="$(wt new -b foo 2>&1)";           _assert_contains "$out" "Usage:" "no <dir> → usage"
   out="$(wt new -b 2>&1)";               _assert_contains "$out" "requires an argument" "-b without value"
+
+  # 引数なし + 非tty(stdin=/dev/null): 対話フォームに入らず usage エラーで即終了する
+  # こと(read でハングしない)。Claude の非tty 呼び出し経路の不変条件。
+  local rc
+  out="$(wt new </dev/null 2>&1)"; rc=$?
+  _assert_contains "$out" "Usage:" "no args + non-tty → usage (no interactive hang)"
+  _assert_neq "$rc" "0" "no args + non-tty → nonzero exit"
+
+  # 対話フォーム用の base 選択ヘルパが定義されていること。
+  typeset -f _wt_pick_base >/dev/null; _assert_eq "$?" "0" "_wt_pick_base defined"
 }
 
 test_claude_arg_validation() {

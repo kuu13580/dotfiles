@@ -88,6 +88,7 @@ DESCRIPTION:
   - 省略時は `git config wt.baseRef` を参照
   - それも未設定なら現在のHEAD
 - **postNew フック** (opt-in): worktree作成後、`git config wt.postNew` が設定されていればそのコマンドを cwd=新worktree で実行する。`.env` の復号鍵など gitignore されたファイルを新worktreeへ複製する用途を想定。詳細は「メタデータ」を参照
+- **対話フォーム** (引数なし起動): `wt new` を**引数なし**で叩くと対話フォームで作成できる。引数順・フラグを覚える負担を下げるのが目的。`read` で branch / dir / description を入力 (dir 既定値は branch の `/`→`-` 変換)、base ref は fzf で既存ブランチ (ローカル/リモート) + `(default)` から選択、最後に summary + `Create? (Y/n)` 確認。**`[[ -t 0 ]]` が真 (tty) のときだけ**発動し、それ以外 (Claude の非tty 呼び出し・フラグ付き呼び出し) は従来どおりのフラグ解析に入る。Claude に強制している `wt new -b ... -d` フローは非tty なので絶対にフォームに落ちない
 
 ### `wt set` 詳細
 
