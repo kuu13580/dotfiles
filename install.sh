@@ -146,6 +146,25 @@ fi
 # Git設定の適用
 source "$DOTFILES_DIR/setup-git.sh"
 
+# devcontainer 内で wt (git worktree) を使えるようにする
+# wt new は worktree を repo の兄弟 (/workspaces/*) に作るが、共有 devcontainer では
+# /workspaces が root 所有で書けず "Permission denied" になる。共有 devcontainer.json は
+# 変更できないため、個人 dotfiles の install から /workspaces の所有権だけ調整して回避する。
+# 注: マウントされているのは /workspaces/<repo> だけなので、ここに作る worktree は
+#     コンテナの揮発レイヤ上に置かれ rebuild で消える (短命な作業用と割り切る)。
+# 注: WSL では /workspaces が存在しないため、この節はまるごとスキップされる。
+if [ -d /workspaces ] && [ ! -w /workspaces ]; then
+    echo "📂 /workspaces が書き込み不可 (devcontainer) のため所有権を調整中..."
+    if sudo -n true 2>/dev/null; then
+        # -R は付けない: マウント済み repo の中身まで chown しないよう /workspaces 直下のみ
+        sudo chown "$(id -u):$(id -g)" /workspaces \
+            && echo "✅ /workspaces を書き込み可能にしました (wt new が使えます)" \
+            || echo "⚠️  /workspaces の chown に失敗しました (wt new は使えないかもしれません)"
+    else
+        echo "⚠️  passwordless sudo が無いため /workspaces を調整できません (必要なら手動で 'sudo chown \$(id -u):\$(id -g) /workspaces')"
+    fi
+fi
+
 # Dockerのインストール
 if command -v docker &> /dev/null; then
     echo "✅ Dockerは既にインストール済みです"
