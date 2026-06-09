@@ -190,7 +190,7 @@ function _wt_new() {
     while [[ -z "$branch" ]]; do
       printf 'Branch name: '; read -r branch || { echo; echo "wt new: aborted"; return 0; }
     done
-    local def_dir="${branch//\//-}"
+    local def_dir="${branch:t}"   # ブランチ名の末尾 (feature/hogehoge → hogehoge)
     printf 'Directory name [%s]: ' "$def_dir"; read -r dir
     [[ -z "$dir" ]] && dir="$def_dir"
     base="$(_wt_pick_base)"
