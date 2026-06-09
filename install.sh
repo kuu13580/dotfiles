@@ -36,6 +36,17 @@ else
     echo "✅ zshは既にインストール済みです"
 fi
 
+# ログインシェルをzshに変更
+# Oh My Zshを--unattendedで入れるとchshがスキップされるため、ここで明示的に変更する
+echo "🐚 ログインシェルをzshに設定中..."
+ZSH_PATH="$(command -v zsh)"
+if [ "$(getent passwd "$(whoami)" | cut -d: -f7)" != "$ZSH_PATH" ]; then
+    sudo chsh -s "$ZSH_PATH" "$(whoami)"
+    echo "✅ ログインシェルをzshに変更しました（反映には再ログイン/再起動が必要）"
+else
+    echo "✅ ログインシェルは既にzshです"
+fi
+
 # Oh My Zshのインストール
 echo "🎨 Oh My Zshをインストール中..."
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
