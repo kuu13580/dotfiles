@@ -304,6 +304,42 @@ test_new_happy_path() {
   _assert_contains "$out" "already exists" "duplicate target rejected"
 }
 
+test_postnew_hook() {
+  echo "[wt new postNew hook (git config wt.postNew)]"
+  local repo="$TMP/repo-postnew"
+  _mkrepo "$repo"
+
+  # hook: env を marker に書き出し、main worktree からファイルをコピーする
+  echo "secret-key" > "$repo/key.src"
+  git -C "$repo" config wt.postNew \
+    'printf "%s|%s|%s\n" "$WT_NEW_BRANCH" "$WT_MAIN_WORKTREE" "$WT_NEW_PATH" > marker.txt; cp "$WT_MAIN_WORKTREE/key.src" key.copied'
+
+  local out; out="$(cd "$repo" && wt new -b feature/hook hook-target -d "hook test" 2>&1)"
+  _assert_contains "$out" "running postNew hook" "postNew hook announced"
+  _assert_contains "$out" "postNew hook completed" "postNew hook completed"
+
+  # cwd=新 worktree で実行されたか (marker が新 worktree に出来ている)
+  _assert_eq "$(cat "$TMP/hook-target/marker.txt" 2>/dev/null | cut -d'|' -f1)" "feature/hook" "WT_NEW_BRANCH passed"
+  _assert_eq "$(cat "$TMP/hook-target/marker.txt" 2>/dev/null | cut -d'|' -f2)" "$repo" "WT_MAIN_WORKTREE = main worktree"
+  _assert_eq "$(cat "$TMP/hook-target/marker.txt" 2>/dev/null | cut -d'|' -f3)" "$TMP/hook-target" "WT_NEW_PATH = new worktree"
+  _assert_eq "$(cat "$TMP/hook-target/key.copied" 2>/dev/null)" "secret-key" "file copied from main worktree"
+
+  # 未設定 repo ではフックは走らない
+  local repo2="$TMP/repo-nohook"
+  _mkrepo "$repo2"
+  out="$(cd "$repo2" && wt new -b feature/nohook nohook-target 2>&1)"
+  if [[ "$out" != *"running postNew hook"* ]]; then _pass "no postNew run when unset"
+  else _fail "no postNew run when unset" "hook ran unexpectedly"; fi
+
+  # フック非ゼロ終了 → 警告のみで worktree は作成される
+  local repo3="$TMP/repo-hookfail"
+  _mkrepo "$repo3"
+  git -C "$repo3" config wt.postNew 'exit 3'
+  out="$(cd "$repo3" && wt new -b feature/hookfail hookfail-target 2>&1)"
+  _assert_contains "$out" "created" "worktree created despite hook failure"
+  _assert_contains "$out" "exited non-zero" "hook failure warned"
+}
+
 # -------------------- run --------------------------------------------------
 echo "wt.zsh test suite"
 echo "  source: $THIS_DIR/wt.zsh"
@@ -323,6 +359,7 @@ test_resolve_name
 test_set_noninteractive
 test_rm_noninteractive
 test_new_happy_path
+test_postnew_hook
 
 echo
 echo "=========================================="

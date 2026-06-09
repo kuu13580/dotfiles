@@ -228,6 +228,37 @@ function _wt_new() {
     echo "wt new: warning - description (-d) not provided. Run 'wt set' to add one." >&2
   fi
   echo "wt new: created $target_path"
+
+  _wt_run_postnew "$target_path" "$branch" "$repo_root"
+}
+
+# ---------- postNew hook (opt-in per repo) -----------------------------------
+# 新しい worktree 作成直後に `git config wt.postNew` のコマンドを実行する。
+# repo 単位の opt-in (共有 .git/config に保存されるため全 worktree で有効)。
+# 未設定の repo では何もしない。フックは cwd=新 worktree で実行され、以下の env を受け取る:
+#   WT_NEW_PATH      新しい worktree の絶対パス
+#   WT_NEW_BRANCH    新 worktree の branch 名
+#   WT_MAIN_WORKTREE main worktree のパス (gitignore されたファイルのコピー元等に)
+#   WT_REPO_ROOT     `wt new` を呼んだ repo root
+# フックが非ゼロ終了しても警告のみで `wt new` は失敗扱いにしない (worktree は既に存在する)。
+function _wt_run_postnew() {
+  local new_path="$1" branch="$2" repo_root="$3"
+  local hook
+  hook="$(git -C "$new_path" config wt.postNew 2>/dev/null)"
+  [[ -z "$hook" ]] && return 0
+
+  local main_wt
+  main_wt="$(git -C "$new_path" worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')"
+
+  echo "wt new: running postNew hook (git config wt.postNew)"
+  if ( cd "$new_path" \
+       && WT_NEW_PATH="$new_path" WT_NEW_BRANCH="$branch" \
+          WT_MAIN_WORKTREE="$main_wt" WT_REPO_ROOT="$repo_root" \
+          zsh -c "$hook" ); then
+    echo "wt new: postNew hook completed"
+  else
+    echo "wt new: warning - postNew hook exited non-zero (worktree kept)" >&2
+  fi
 }
 
 # ---------- wt ls [-p] --------------------------------------------------------
@@ -533,11 +564,15 @@ USAGE
 METADATA
   wt.description    per-worktree (git config --worktree)  "what is this for"
   wt.baseRef        per-repo     (git config)             default base ref for `wt new`
+  wt.postNew        per-repo     (git config)             command run after `wt new`
+                      cwd = new worktree; env: WT_NEW_PATH WT_NEW_BRANCH
+                      WT_MAIN_WORKTREE WT_REPO_ROOT  (non-zero exit = warning only)
 
 EXAMPLES
   wt new -b feature/foo task-foo origin/develop -d "PR#1234 verify"
   git config wt.baseRef origin/develop      # set default base for `wt new`
   wt cd task-foo                            # cd to worktree by directory name
+  git config wt.postNew 'cp "$WT_MAIN_WORKTREE/.env.keys" .env.keys'   # opt-in postNew
 EOF
 }
 

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-06-10
+
+### Added
+
+- **`wt new` の postNew フック (`git config wt.postNew`)**: worktree 作成直後に repo 単位 opt-in のコマンドを実行できるように。cwd=新 worktree、env で `WT_NEW_PATH` / `WT_NEW_BRANCH` / `WT_MAIN_WORKTREE` / `WT_REPO_ROOT` を渡す。非ゼロ終了は警告のみで `wt new` は失敗扱いにしない。`.env` 復号鍵など gitignore されたファイルを新 worktree へ複製する用途を想定 (例: `git config wt.postNew 'cp "$WT_MAIN_WORKTREE/.env.keys" .env.keys'`)。`wt.baseRef` と同じ per-repo config パターンを踏襲。テスト9件追加 (計 68 アサーション)
+
 ## [1.5.0] - 2026-06-05
 
 ### Added

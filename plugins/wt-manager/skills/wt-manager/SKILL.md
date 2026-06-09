@@ -163,6 +163,7 @@ Claude がセッションごと別 worktree へ移るなら `EnterWorktree({ pat
 | ---------------- | -------------------------------------- | ---------------------------------------------------------- |
 | `wt.description` | per-worktree (`git config --worktree`) | 「何用か」を自然文で                                       |
 | `wt.baseRef`     | per-repository (`git config`)          | `wt new` の base 省略時のデフォルト (例: `origin/develop`) |
+| `wt.postNew`     | per-repository (`git config`)          | `wt new` 直後に実行する opt-in コマンド。cwd=新worktree、env: `WT_NEW_PATH` `WT_NEW_BRANCH` `WT_MAIN_WORKTREE` `WT_REPO_ROOT` (例: `cp "$WT_MAIN_WORKTREE/.env.keys" .env.keys`) |
 
 description は自然文。status / PR番号 / レビュアー / 期限などはすべて description 内に書き込む (フィールド分割しない方針)。
 
