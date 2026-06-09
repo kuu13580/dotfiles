@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`wt new` の対話フォーム (引数なし起動)**: コマンドの引数順・フラグを覚えなくても、`wt new` を引数なしで叩くと対話フォームで worktree を作れるように。branch / dir / description は `read` プロンプト (dir 既定値は branch の `/`→`-` 変換)、base ref は新ヘルパ `_wt_pick_base` が fzf で既存ブランチ (ローカル/リモート) + `(default)` から選ばせる。最後に summary を出して `Create? (Y/n)` で確認。フォームは **`[[ -t 0 ]]` が真 (tty) のときだけ** 発動し、Claude の非tty 呼び出し・フラグ付き呼び出しは従来どおり (hook で強制される `wt new -b ... -d` フローは不変)。テスト3件追加 (計 71 アサーション)
+- **`wt new` の対話フォーム (引数なし起動)**: コマンドの引数順・フラグを覚えなくても、`wt new` を引数なしで叩くと対話フォームで worktree を作れるように。branch / dir / description は `read` プロンプト (dir 既定値は branch 名の末尾 = 最後の `/` 以降。例: `feature/hogehoge` → `hogehoge`)、base ref は新ヘルパ `_wt_pick_base` が fzf で既存ブランチ (ローカル/リモート) + `(default)` から選ばせる。最後に summary を出して `Create? (Y/n)` で確認。フォームは **`[[ -t 0 ]]` が真 (tty) のときだけ** 発動し、Claude の非tty 呼び出し・フラグ付き呼び出しは従来どおり (hook で強制される `wt new -b ... -d` フローは不変)。テスト3件追加 (計 71 アサーション)
 
 ## [1.6.0] - 2026-06-10
 
