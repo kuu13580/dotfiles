@@ -7,7 +7,7 @@
 # Load      : ~/.zshrc 末尾で `source "${${(%):-%x}:A:h}/wt.zsh"` (相対)
 #
 # Subcommands: wt | wt new | wt ls | wt set | wt rm | wt claude | wt cd
-# Specs     : plugins/wt-manager/REQUIREMENTS.md / skills/wt-manager/SKILL.md
+# Docs      : plugins/wt-manager/README.md / skills/wt-manager/SKILL.md
 #
 # 設計メモ (内包方式):
 #   トップレベルに公開する関数は `wt` ただ1つ。内部ヘルパ (_wt_*) は wt() の
