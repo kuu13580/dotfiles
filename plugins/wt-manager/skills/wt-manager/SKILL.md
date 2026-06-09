@@ -33,6 +33,7 @@ wt new -b <new-branch> <dir> [base-ref] -d "<目的を自然文で>"
 - `-d` の description は必須扱い。後で「何用か分からない」を防ぐため、PR番号 / 検証対象 / 目的 を含める
 - `[base-ref]` 省略時は `git config wt.baseRef` → 現在のHEAD の順でフォールバック
 - **作成後の挙動**: worktree作成のみ。`cd` / `claude --bg` 起動は連動しない。次の操作は `wt cd` / `wt claude` で別途呼ぶ
+- 引数なしの `wt new` は人間専用の対話フォーム (tty 限定)。**Claude は必ず上記のフラグ付き形式 (`wt new -b ... -d ...`) を使う** — Claude の Bash は非tty なのでフォームには落ちず、引数が欠けると usage エラーになるだけ
 
 例:
 

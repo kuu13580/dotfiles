@@ -7,7 +7,7 @@
 # Load      : ~/.zshrc 末尾で `source "${${(%):-%x}:A:h}/wt.zsh"` (相対)
 #
 # Subcommands: wt | wt new | wt ls | wt set | wt rm | wt claude | wt cd
-# Specs     : plugins/wt-manager/REQUIREMENTS.md / skills/wt-manager/SKILL.md
+# Docs      : plugins/wt-manager/README.md / skills/wt-manager/SKILL.md
 #
 # 設計メモ (内包方式):
 #   トップレベルに公開する関数は `wt` ただ1つ。内部ヘルパ (_wt_*) は wt() の
@@ -145,6 +145,20 @@ function _wt_fzf_select() {
   print -r -- "$input" | fzf "${fzf_opts[@]}" | awk -F'\t' '{print $1}'
 }
 
+# Pick a base ref via fzf for the interactive `wt new` form.
+# Prints the chosen ref, or "" for the repo default (wt.baseRef → HEAD).
+function _wt_pick_base() {
+  local default_ref sel
+  default_ref="$(git config wt.baseRef 2>/dev/null)"
+  sel="$( {
+      printf '%s\n' "(default: ${default_ref:-HEAD})"
+      git for-each-ref --format='%(refname:short)' refs/heads refs/remotes 2>/dev/null
+    } | fzf --height 60% --reverse --border --prompt='Base ref > ' \
+            --header='既存ブランチから選択 / 入力で絞り込み / Esc=default' )"
+  [[ -z "$sel" || "$sel" == '(default:'* ]] && { print -r -- ''; return 0; }
+  print -r -- "$sel"
+}
+
 # ---------- wt (no args) -----------------------------------------------------
 function _wt_default() {
   _wt_check_deps || return 1
@@ -168,25 +182,48 @@ function _wt_new() {
   _wt_check_deps || return 1
 
   local branch="" dir="" base="" desc=""
-  while (( $# > 0 )); do
-    case "$1" in
-      -b) [[ -z "${2:-}" ]] && { echo "wt new: -b requires an argument" >&2; return 1; }
-          branch="$2"; shift 2 ;;
-      -d) [[ -z "${2:-}" ]] && { echo "wt new: -d requires an argument" >&2; return 1; }
-          desc="$2"; shift 2 ;;
-      --) shift; break ;;
-      -*) echo "wt new: unknown option: $1" >&2; return 1 ;;
-      *)
-        if   [[ -z "$dir"  ]]; then dir="$1"
-        elif [[ -z "$base" ]]; then base="$1"
-        else echo "wt new: too many positional args (got '$1')" >&2; return 1
-        fi
-        shift ;;
-    esac
-  done
+
+  if (( $# == 0 )) && [[ -t 0 ]]; then
+    # 人間が tty で `wt new` を素で叩いたとき限定の対話フォーム。
+    # Claude の Bash は非tty なので必ず else 側 → 従来どおり usage エラーになる。
+    echo "wt new (interactive) — Ctrl-C で中断"
+    while [[ -z "$branch" ]]; do
+      printf 'Branch name: '; read -r branch || { echo; echo "wt new: aborted"; return 0; }
+    done
+    local def_dir="${branch//\//-}"
+    printf 'Directory name [%s]: ' "$def_dir"; read -r dir
+    [[ -z "$dir" ]] && dir="$def_dir"
+    base="$(_wt_pick_base)"
+    printf 'Description (何用か): '; read -r desc
+    echo
+    echo "  branch : $branch"
+    echo "  dir    : $dir"
+    echo "  base   : ${base:-(default: wt.baseRef → HEAD)}"
+    echo "  desc   : ${desc:-(none)}"
+    printf 'Create? (Y/n): '; local _c; read -r _c
+    [[ "$_c" == [nN]* ]] && { echo "wt new: aborted"; return 0; }
+  else
+    while (( $# > 0 )); do
+      case "$1" in
+        -b) [[ -z "${2:-}" ]] && { echo "wt new: -b requires an argument" >&2; return 1; }
+            branch="$2"; shift 2 ;;
+        -d) [[ -z "${2:-}" ]] && { echo "wt new: -d requires an argument" >&2; return 1; }
+            desc="$2"; shift 2 ;;
+        --) shift; break ;;
+        -*) echo "wt new: unknown option: $1" >&2; return 1 ;;
+        *)
+          if   [[ -z "$dir"  ]]; then dir="$1"
+          elif [[ -z "$base" ]]; then base="$1"
+          else echo "wt new: too many positional args (got '$1')" >&2; return 1
+          fi
+          shift ;;
+      esac
+    done
+  fi
 
   if [[ -z "$branch" || -z "$dir" ]]; then
     echo "Usage: wt new -b <branch> <dir> [base] [-d desc]" >&2
+    echo "       (tip: 引数なしで 'wt new' を叩くと対話フォームが出ます)" >&2
     return 1
   fi
   if [[ "$dir" == *"/"* ]]; then
@@ -539,6 +576,7 @@ wt - git worktree manager (zsh function)
 
 USAGE
   wt                                 fzf select → pick editor (code/zed) → open
+  wt new                             引数なしで対話フォーム (tty のみ; branch/dir/desc=prompt, base=fzf)
   wt new -b <br> <dir> [base] [-d desc]
                                      create new worktree (records description)
                                        <dir> must be a directory NAME only
