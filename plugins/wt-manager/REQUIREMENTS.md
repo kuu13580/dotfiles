@@ -87,6 +87,7 @@ DESCRIPTION:
   - 第3引数で明示
   - 省略時は `git config wt.baseRef` を参照
   - それも未設定なら現在のHEAD
+- **postNew フック** (opt-in): worktree作成後、`git config wt.postNew` が設定されていればそのコマンドを cwd=新worktree で実行する。`.env` の復号鍵など gitignore されたファイルを新worktreeへ複製する用途を想定。詳細は「メタデータ」を参照
 
 ### `wt set` 詳細
 
@@ -140,6 +141,7 @@ install-bench-yarn   detached@054a77c85                      45d   (no descripti
 | キー | 内容 |
 |---|---|
 | `wt.baseRef` | `wt new` 時のbase省略時に使うref (例: `origin/develop`) |
+| `wt.postNew` | `wt new` 直後に実行するコマンド (opt-in)。cwd=新worktree、env: `WT_NEW_PATH` `WT_NEW_BRANCH` `WT_MAIN_WORKTREE` `WT_REPO_ROOT`。非ゼロ終了は警告のみで `wt new` は失敗扱いにしない。例: `git config wt.postNew 'cp "$WT_MAIN_WORKTREE/.env.keys" .env.keys'` (gitignoreされた鍵ファイルを新worktreeへ複製) |
 
 PRを作成したら、Claude側でdescriptionを更新する運用 (skillに記述)。
 
