@@ -1,6 +1,6 @@
 {
   "name": "wt-manager",
   "description": "git worktree を fzf ベースの `wt` 系コマンドで管理し、各worktreeの目的を git config に記録する。Claude には `git worktree add` 直叩きを避け `wt new` 経由で作成させる動線を提供。",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "author": { "name": "m-tojo" }
 }

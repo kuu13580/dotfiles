@@ -125,6 +125,24 @@ EnterWorktree({ path: "<作成された絶対パス>" })
 
 > 人間は `wt new -d "<目的>"` → `wt cd`、Claude は `wt new -d "<目的>"` → `EnterWorktree({ path })`。**作成コマンドは共通、入り方だけが違う**。
 
+### Rule 7: background セッションでは `bgIsolation` を切り、Claude が能動的に隔離する
+
+`wt claude` / `claude --bg` / Agent View で起動する **background セッション**には2つの落とし穴がある:
+
+1. **PreToolUse hook が発火しないことがある** — Rule 5/6 のガード (`guard-worktree.sh` による `EnterWorktree` name / `ExitWorktree` remove の deny) が bg では効かない場合がある
+2. **harness の自動隔離が `wt` 規約を無視する** — `settings.json` の `worktree.bgIsolation` が既定の `"worktree"` だと、bg は `.claude/worktrees/` に自前の worktree を切る。これは `wt` の description も配置規約も持たない (Rule 5 の name モードと同じ問題)
+
+対策として、**ユーザーが `settings.json` に手動で `"worktree": {"bgIsolation": "none"}` を設定**し、harness の自動隔離を止める。その上で bg セッションでは Claude が能動的に `wt` ベースで隔離する:
+
+```bash
+wt new -b <branch> <dir> -d "<目的>"           # ① bgIsolation の値に関わらず動く
+EnterWorktree({ path: "<作成された絶対パス>" })   # ② 作成した worktree に入る
+```
+
+- `bgIsolation: "none"` は **shared checkout への Edit/Write ブロックを無効化するだけ**で、`wt new` (= Bash 経由の `git worktree add`) には影響しない。隔離は Claude が ①② で明示的に行う
+- hook が効かない前提なので、Rule 5/6 を Claude 自身の規律として守る (name モードでの新規作成・shared checkout の直編集をしない)
+- `bgIsolation` は enum `["worktree", "none"]`、default `"worktree"`
+
 ## コマンドリファレンス
 
 | コマンド                                    | 用途                                                         | 補足                                           |
