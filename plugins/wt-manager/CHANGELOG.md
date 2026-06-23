@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-06-21
+
+### Documentation
+
+- **background セッションでの隔離運用を明記 (SKILL Rule 7 / README)**: `wt claude` / `claude --bg` / Agent View の bg セッションでは PreToolUse hook (`guard-worktree.sh`) が発火しないことがあり、Rule 5/6 のガードが効かない前提を追記。対策として、ユーザーが `settings.json` に `"worktree": {"bgIsolation": "none"}` を手動設定し harness の自動隔離 (`.claude/worktrees/` への `wt` 規約無視の worktree 生成) を止めた上で、Claude が能動的に `wt new` → `EnterWorktree({ path })` で隔離する運用を文書化。`bgIsolation: "none"` は Edit/Write の隔離ブロックを無効化するだけで `wt new` (Bash 経由の `git worktree add`) には影響しない点も明記。ドキュメントのみで `wt.zsh` / hook の挙動変更なし
+
 ## [1.7.0] - 2026-06-10
 
 ### Added
