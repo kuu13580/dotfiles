@@ -177,6 +177,26 @@ function _wt_default() {
   esac
 }
 
+# 前後の空白を除去して出力する (空白のみ → 空文字列)。
+function _wt_trim() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"   # 先頭空白を除去
+  s="${s%"${s##*[![:space:]]}"}"   # 末尾空白を除去
+  print -r -- "$s"
+}
+
+# ブランチ名の末尾 (`:t`) を '_' 区切りで前半から1段ずつ削った dir 候補を1行ずつ出力する。
+# 例: feature/077_TICKET-5_update-translate
+#       → 077_TICKET-5_update-translate / TICKET-5_update-translate / update-translate
+function _wt_dir_candidates() {
+  local rest="${1:t}"
+  print -r -- "$rest"
+  while [[ "$rest" == *_* ]]; do
+    rest="${rest#*_}"
+    print -r -- "$rest"
+  done
+}
+
 # ---------- wt new -b <branch> <dir> [base] [-d desc] ------------------------
 function _wt_new() {
   _wt_check_deps || return 1
@@ -191,8 +211,30 @@ function _wt_new() {
       printf 'Branch name: '; read -r branch || { echo; echo "wt new: aborted"; return 0; }
     done
     local def_dir="${branch:t}"   # ブランチ名の末尾 (feature/hogehoge → hogehoge)
-    printf 'Directory name [%s]: ' "$def_dir"; read -r dir
-    [[ -z "$dir" ]] && dir="$def_dir"
+    # '_' 区切りで前半を削った候補を提示。番号で選択、空 Enter は [1] (フル)、
+    # それ以外の文字列はそのまま dir として直接入力扱い。
+    local -a dir_cands=("${(@f)$(_wt_dir_candidates "$branch")}")
+    if (( ${#dir_cands} > 1 )); then
+      echo "Directory name?"
+      local _i
+      for (( _i = 1; _i <= ${#dir_cands}; _i++ )); do
+        printf '  %d) %s\n' "$_i" "${dir_cands[_i]}"
+      done
+      local _sel
+      printf '番号で選択 / 直接入力 [1]: '; read -r _sel
+      _sel="$(_wt_trim "$_sel")"
+      if [[ -z "$_sel" ]]; then
+        dir="${dir_cands[1]}"
+      elif [[ "$_sel" == <-> ]] && (( _sel >= 1 && _sel <= ${#dir_cands} )); then
+        dir="${dir_cands[_sel]}"
+      else
+        dir="$_sel"
+      fi
+    else
+      printf 'Directory name [%s]: ' "$def_dir"; read -r dir
+      dir="$(_wt_trim "$dir")"
+      [[ -z "$dir" ]] && dir="$def_dir"
+    fi
     base="$(_wt_pick_base)"
     printf 'Description (何用か): '; read -r desc
     echo
