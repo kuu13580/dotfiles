@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-06-25
+
+### Added
+
+- **対話フォームの dir 候補を `_` 区切りで段階提示**: `wt new` 引数なしフォームで、branch 名の末尾 (`:t`) を `_` 区切りに前半から1段ずつ削った候補を番号付きで提示するように。番号で選択 / 空 Enter は `1)` (フル) / それ以外の文字列は直接入力扱い。`_` を含まない場合は従来どおり `[既定値]` の単一入力。例: `feature/077_TICKET-5_update-translate` → `1) 077_TICKET-5_update-translate` `2) TICKET-5_update-translate` `3) update-translate`。候補生成は純粋ヘルパ `_wt_dir_candidates` に切り出し、テスト3件追加 (計 74 アサーション)
+
 ## [1.7.1] - 2026-06-21
 
 ### Documentation
