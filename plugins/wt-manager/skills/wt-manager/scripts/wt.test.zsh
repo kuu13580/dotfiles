@@ -350,6 +350,15 @@ test_postnew_hook() {
   _assert_contains "$out" "exited non-zero" "hook failure warned"
 }
 
+test_trim() {
+  echo "[_wt_trim]"
+  _assert_eq "$(_wt_trim "  hello  ")" "hello" "前後の空白を除去"
+  _assert_eq "$(_wt_trim "   ")" "" "空白のみ → 空文字列"
+  _assert_eq "$(_wt_trim "$(printf '\t foo \t')")" "foo" "タブも除去"
+  _assert_eq "$(_wt_trim "a b")" "a b" "内部の空白は保持"
+  _assert_eq "$(_wt_trim "nochange")" "nochange" "空白なしはそのまま"
+}
+
 test_dir_candidates() {
   echo "[_wt_dir_candidates]"
   local got
@@ -385,6 +394,7 @@ test_set_noninteractive
 test_rm_noninteractive
 test_new_happy_path
 test_postnew_hook
+test_trim
 test_dir_candidates
 
 echo
