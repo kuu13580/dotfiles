@@ -4,16 +4,15 @@ git worktree を fzf ベースの `wt` 系コマンドで管理するプラグ�
 
 ## 構成
 
-実装本体 (`wt.zsh`) は **dotfiles 側を正本**とし、プラグインには Claude 向けの SKILL と配布用スナップショットを同梱する 2 層構成です。
+実装本体 (`wt.zsh`) は **dotfiles リポジトリ側の1ファイルのみ**を実体とし、プラグインには複製を同梱しません。プラグインが提供するのは Claude 向けの SKILL と hook だけです。
 
 | 役割 | パス |
 | --- | --- |
-| 正本 (zsh関数の実体) | `~/dotfiles/dotfiles/wt.zsh` |
-| 配布用スナップショット | `skills/wt-manager/scripts/wt.zsh` |
-| テスト | `skills/wt-manager/scripts/wt.test.zsh` |
+| zsh 関数の実体 (唯一) | `~/dotfiles/dotfiles/wt.zsh` |
+| テスト | `~/dotfiles/dotfiles/wt.test.zsh` |
 | Claude 向け動線 | `skills/wt-manager/SKILL.md` |
 
-プラグインインストールパス(キャッシュ位置)は変動するため、`.zshrc` から source するのは **dotfiles 側の固定パス**です。
+> **前提**: 本プラグインは **dotfiles リポジトリが初期セットアップ済みであること** (= `wt.zsh` が `.zshrc` から source 済み) を前提とします。`wt.zsh` の複製を同梱しないため、dotfiles 未セットアップの環境では `wt` コマンドが存在せず機能しません。プラグインインストールパス(キャッシュ位置)は変動するため、`.zshrc` から source するのは dotfiles 側の固定パスです。
 
 ## セットアップ
 

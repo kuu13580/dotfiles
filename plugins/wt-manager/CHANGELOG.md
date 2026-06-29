@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-06-30
+
+### Changed
+
+- **配布用スナップショットを廃止し実体を1ファイルに統一**: これまでプラグインに同梱していた参照用コピー (`skills/wt-manager/scripts/wt.zsh` / `wt.test.zsh`) を削除。実体は `~/dotfiles/dotfiles/wt.zsh` の1ファイルのみとし、二重管理によるドリフト (正本と同梱版の乖離) を構造的に排除した。本プラグインは **dotfiles リポジトリが初期セットアップ済みであること**を前提とする (未セットアップ環境では `wt` が存在せず機能しない)。SKILL.md / README.md の参照先・構成記述を実体1ファイルに統一
+
 ## [1.8.0] - 2026-06-25
 
 ### Added

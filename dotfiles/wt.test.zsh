@@ -97,6 +97,16 @@ test_new_validation() {
   out="$(wt new -b foo sub/dir 2>&1)";   _assert_contains "$out" "directory NAME only" "relative path rejected"
   out="$(wt new -b foo 2>&1)";           _assert_contains "$out" "Usage:" "no <dir> → usage"
   out="$(wt new -b 2>&1)";               _assert_contains "$out" "requires an argument" "-b without value"
+
+  # 引数なし + 非tty(stdin=/dev/null): 対話フォームに入らず usage エラーで即終了する
+  # こと(read でハングしない)。Claude の非tty 呼び出し経路の不変条件。
+  local rc
+  out="$(wt new </dev/null 2>&1)"; rc=$?
+  _assert_contains "$out" "Usage:" "no args + non-tty → usage (no interactive hang)"
+  _assert_neq "$rc" "0" "no args + non-tty → nonzero exit"
+
+  # 対話フォーム用の base 選択ヘルパが定義されていること。
+  typeset -f _wt_pick_base >/dev/null; _assert_eq "$?" "0" "_wt_pick_base defined"
 }
 
 test_claude_arg_validation() {
@@ -340,6 +350,30 @@ test_postnew_hook() {
   _assert_contains "$out" "exited non-zero" "hook failure warned"
 }
 
+test_trim() {
+  echo "[_wt_trim]"
+  _assert_eq "$(_wt_trim "  hello  ")" "hello" "前後の空白を除去"
+  _assert_eq "$(_wt_trim "   ")" "" "空白のみ → 空文字列"
+  _assert_eq "$(_wt_trim "$(printf '\t foo \t')")" "foo" "タブも除去"
+  _assert_eq "$(_wt_trim "a b")" "a b" "内部の空白は保持"
+  _assert_eq "$(_wt_trim "nochange")" "nochange" "空白なしはそのまま"
+}
+
+test_dir_candidates() {
+  echo "[_wt_dir_candidates]"
+  local got
+  # '_' 区切りで前半から1段ずつ削る (先頭の feature/ は :t で除去済み)
+  got="$(_wt_dir_candidates feature/077_TICKET-5_update-translate | paste -sd, -)"
+  _assert_eq "$got" "077_TICKET-5_update-translate,TICKET-5_update-translate,update-translate" \
+    "multi-segment splits from the front"
+
+  got="$(_wt_dir_candidates feature/hotfix | paste -sd, -)"
+  _assert_eq "$got" "hotfix" "no '_' → single candidate"
+
+  got="$(_wt_dir_candidates plain-branch | paste -sd, -)"
+  _assert_eq "$got" "plain-branch" "no '/' nor '_' → branch itself"
+}
+
 # -------------------- run --------------------------------------------------
 echo "wt.zsh test suite"
 echo "  source: $THIS_DIR/wt.zsh"
@@ -360,6 +394,8 @@ test_set_noninteractive
 test_rm_noninteractive
 test_new_happy_path
 test_postnew_hook
+test_trim
+test_dir_candidates
 
 echo
 echo "=========================================="
