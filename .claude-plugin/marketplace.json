@@ -23,6 +23,11 @@
       "name": "wt-manager",
       "source": "./plugins/wt-manager",
       "description": "git worktreeをfzfベースのwt系コマンドで管理し、各worktreeの用途をgit configに記録。Claudeにgit worktree add直叩きを避けwt new経由で作成させる"
+    },
+    {
+      "name": "web-search",
+      "source": "./plugins/web-search",
+      "description": "内部知識ではなくWebSearch/WebFetchで最新情報を調査してから回答させる。ライブラリのバージョン、料金、リリース、最新動向など揺らぐ事実が話題になったら自動発動"
     }
   ]
 }
