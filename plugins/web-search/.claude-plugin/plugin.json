@@ -1,6 +1,6 @@
 {
   "name": "web-search",
   "description": "内部知識ではなく WebSearch / WebFetch で最新情報を調査してから回答させる skill を提供する。ライブラリのバージョン、料金、リリース、最新動向など揺らぐ事実が話題になったら自動で発動する。",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": { "name": "m-tojo" }
 }
