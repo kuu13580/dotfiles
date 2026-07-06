@@ -205,9 +205,13 @@ function _wt_new() {
   if (( $# == 0 )) && [[ -t 0 ]]; then
     # 人間が tty で `wt new` を素で叩いたとき限定の対話フォーム。
     # Claude の Bash は非tty なので必ず else 側 → 従来どおり usage エラーになる。
+    # 入力読み取りは `vared` を使う (`read -r` は BS が 1バイト単位で削るため
+    # 日本語 UTF-8 入力を編集すると文字化けする)。
     echo "wt new (interactive) — Ctrl-C で中断"
     while [[ -z "$branch" ]]; do
-      printf 'Branch name: '; read -r branch || { echo; echo "wt new: aborted"; return 0; }
+      branch=""
+      vared -p 'Branch name: ' branch || { echo; echo "wt new: aborted"; return 0; }
+      branch="$(_wt_trim "$branch")"
     done
     local def_dir="${branch:t}"   # ブランチ名の末尾 (feature/hogehoge → hogehoge)
     # '_' 区切りで前半を削った候補を提示。番号で選択、空 Enter は [1] (フル)、
@@ -219,8 +223,8 @@ function _wt_new() {
       for (( _i = 1; _i <= ${#dir_cands}; _i++ )); do
         printf '  %d) %s\n' "$_i" "${dir_cands[_i]}"
       done
-      local _sel
-      printf '番号で選択 / 直接入力 [1]: '; read -r _sel
+      local _sel=""
+      vared -p '番号で選択 / 直接入力 [1]: ' _sel || { echo; echo "wt new: aborted"; return 0; }
       _sel="$(_wt_trim "$_sel")"
       if [[ -z "$_sel" ]]; then
         dir="${dir_cands[1]}"
@@ -230,18 +234,21 @@ function _wt_new() {
         dir="$_sel"
       fi
     else
-      printf 'Directory name [%s]: ' "$def_dir"; read -r dir
+      dir=""
+      vared -p "Directory name [$def_dir]: " dir || { echo; echo "wt new: aborted"; return 0; }
       dir="$(_wt_trim "$dir")"
       [[ -z "$dir" ]] && dir="$def_dir"
     fi
     base="$(_wt_pick_base)"
-    printf 'Description (何用か): '; read -r desc
+    desc=""
+    vared -p 'Description (何用か): ' desc || { echo; echo "wt new: aborted"; return 0; }
     echo
     echo "  branch : $branch"
     echo "  dir    : $dir"
     echo "  base   : ${base:-(default: wt.baseRef → HEAD)}"
     echo "  desc   : ${desc:-(none)}"
-    printf 'Create? (Y/n): '; local _c; read -r _c
+    local _c=""
+    vared -p 'Create? (Y/n): ' _c || { echo; echo "wt new: aborted"; return 0; }
     [[ "$_c" == [nN]* ]] && { echo "wt new: aborted"; return 0; }
   else
     while (( $# > 0 )); do
@@ -429,8 +436,12 @@ function _wt_set() {
     else
       echo "  (none)"
     fi
-    printf 'New description (single line, empty to unset): '
-    read -r new
+    # `read -r` だと BS が UTF-8 マルチバイトを 1バイト単位で削って文字化けするため vared を使う。
+    # 初期値は現在の description。Ctrl-C 中断時は既存 description を消さずに abort する
+    # (`new=""` で初期化 + `||` なしだと、中断時に `[[ -z "$new" ]]` を通って --unset されてしまう)。
+    new="$current"
+    vared -p 'New description (single line, empty to unset): ' new \
+      || { echo; echo "wt set: aborted"; return 0; }
   fi
 
   _wt_ensure_worktree_config "$sel"
