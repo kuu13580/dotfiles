@@ -156,6 +156,16 @@ function gh-needs-action() {
 # (works through symlinks; ${${(%):-%x}:A:h} = resolved absolute dir of this file)
 [[ -f "${${(%):-%x}:A:h}/wt.zsh" ]] && source "${${(%):-%x}:A:h}/wt.zsh"
 
+# Claude Code
+# - FORCE_HYPERLINK: OSC 8 の端末検出をバイパスして footer PR バッジ等を常に clickable にする
+#   (Windows Terminal 等で auto-detect 外れ対策。非対応端末で escape が生文字化するなら外す)
+# - CLAUDE_CODE_NO_FLICKER: fullscreen renderer を強制 ON (alt screen buffer + mouse + 定常メモリ)。
+#   v2.1.89+ / research preview。tmux の copy-mode / Cmd+f は代替スクリーンでは効かなくなり、
+#   Ctrl+o の transcript mode 経由で検索する運用に変わる (`/tui default` で classic に戻せる)
+# ref: https://code.claude.com/docs/en/statusline , https://code.claude.com/docs/en/fullscreen
+export FORCE_HYPERLINK=1
+export CLAUDE_CODE_NO_FLICKER=1
+
 # Load machine-local overrides (not tracked in git)
 [[ -f ~/.local.zshrc ]] && source ~/.local.zshrc
 

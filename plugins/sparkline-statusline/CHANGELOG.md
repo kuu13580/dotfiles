@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-07
+
+### Removed
+
+- 1.1.0 で追加した statusline 内の PR 番号表示 (OSC 8 ハイパーリンク + review_state アイコン) を撤去。同等の clickable PR リンクは Claude Code 標準の footer PR バッジが提供しており、端末で clickable にならないケースは `FORCE_HYPERLINK=1 claude` で起動することで解決するため、statusline 側での二重表示を停止
+
+### Changed
+
+- レイアウトを 1 行構成 (1.0.0 と同じ) に戻す。PR 表示廃止に伴い 2 行にする理由が消えたため
+- README に `FORCE_HYPERLINK` の案内を追記 (Claude Code 標準 footer PR バッジを clickable にする方法として)
+
 ## [1.1.1] - 2026-07-07
 
 ### Fixed
