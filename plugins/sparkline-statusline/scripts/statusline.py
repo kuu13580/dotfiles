@@ -44,8 +44,8 @@ parts = [model]
 
 pr = data.get('pr') or {}
 pr_number = pr.get('number')
-pr_url = pr.get('url')
-if pr_number and pr_url:
+if pr_number:
+    pr_url = pr.get('url')
     state_map = {
         'approved':          ('\033[32m', '✓'),
         'changes_requested': ('\033[31m', '✗'),
@@ -53,8 +53,9 @@ if pr_number and pr_url:
         'draft':             (DIM,        '•'),
     }
     color, icon = state_map.get(pr.get('review_state'), ('', ''))
-    link = f'\033]8;;{pr_url}\a#{pr_number}\033]8;;\a'
-    parts.append(f'{color}{icon}{R} {link}' if icon else link)
+    label = f'#{pr_number}'
+    text = f'\033]8;;{pr_url}\a{label}\033]8;;\a' if pr_url else label
+    parts.append(f'{color}{icon}{R} {text}' if icon else text)
 
 ctx = data.get('context_window', {}).get('used_percentage')
 if ctx is not None:
