@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.1] - 2026-07-07
 
+### Fixed
+
+- `scripts/setup-statusline.sh` / `scripts/statusline.py` の実行権限 (`+x`) が抜けており、SessionStart hook / statusline レンダリングが `Permission denied` で失敗していた問題を修正 (1.0.0 → 1.1.0 で mode が `100755` から `100644` に落ちていた)
+
 ### Changed
 
 - `setup-statusline.sh` を `SessionStart` に加え `UserPromptSubmit` にも登録。プラグイン更新後にセッション再起動を待たず、次のプロンプト送信時に `settings.json` の statusline パスが自動更新される (差分がない時は早期 return するので overhead は無視できる)
