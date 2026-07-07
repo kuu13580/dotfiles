@@ -1,6 +1,6 @@
 {
   "name": "sparkline-statusline",
   "description": "スパークラインゲージでコンテキスト使用率・レートリミットを表示するステータスライン (OSC 8 でクリック可能な PR リンク付き)",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": { "name": "m-tojo" }
 }
