@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 現在ブランチに紐づく PR 番号を OSC 8 ハイパーリンクで表示 (Cmd/Ctrl+Click で PR ページを開ける)
 - `pr.review_state` に応じたレビュー状態アイコン (approved: 緑 ✓ / changes_requested: 赤 ✗ / pending: 黄 • / draft: dim •)
 
+### Changed
+
+- レイアウトを 2 行構成に変更: 1 行目はモデル名 + PR (識別情報)、2 行目は使用率 (ctx / 5h / 7d)。狭い端末での truncate を避け、カテゴリを視覚的に分離
+
 ## [1.0.0] - 2026-03-25
 
 ### Added
