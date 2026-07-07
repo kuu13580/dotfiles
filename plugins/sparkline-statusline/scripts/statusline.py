@@ -42,6 +42,20 @@ def fmt(label, pct):
 model = data.get('model', {}).get('display_name', 'Claude')
 parts = [model]
 
+pr = data.get('pr') or {}
+pr_number = pr.get('number')
+pr_url = pr.get('url')
+if pr_number and pr_url:
+    state_map = {
+        'approved':          ('\033[32m', '✓'),
+        'changes_requested': ('\033[31m', '✗'),
+        'pending':           ('\033[33m', '•'),
+        'draft':             (DIM,        '•'),
+    }
+    color, icon = state_map.get(pr.get('review_state'), ('', ''))
+    link = f'\033]8;;{pr_url}\a#{pr_number}\033]8;;\a'
+    parts.append(f'{color}{icon}{R} {link}' if icon else link)
+
 ctx = data.get('context_window', {}).get('used_percentage')
 if ctx is not None:
     parts.append(fmt('ctx', ctx))
