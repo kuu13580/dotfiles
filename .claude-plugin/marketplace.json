@@ -7,7 +7,7 @@
     {
       "name": "sparkline-statusline",
       "source": "./plugins/sparkline-statusline",
-      "description": "スパークラインゲージでコンテキスト使用率・レートリミットを表示するステータスライン (OSC 8 でクリック可能な PR リンク付き)"
+      "description": "スパークラインゲージでコンテキスト使用率・レートリミットを表示するステータスライン"
     },
     {
       "name": "pr-bot-watcher",
