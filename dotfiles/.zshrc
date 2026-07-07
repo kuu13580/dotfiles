@@ -156,6 +156,11 @@ function gh-needs-action() {
 # (works through symlinks; ${${(%):-%x}:A:h} = resolved absolute dir of this file)
 [[ -f "${${(%):-%x}:A:h}/wt.zsh" ]] && source "${${(%):-%x}:A:h}/wt.zsh"
 
+# Claude Code: OSC 8 の端末検出をバイパスして footer PR バッジ等を常に clickable にする
+# (Windows Terminal 等で auto-detect が外れるとき有効。非対応端末で escape が生文字化するなら外す)
+# ref: https://code.claude.com/docs/en/statusline
+export FORCE_HYPERLINK=1
+
 # Load machine-local overrides (not tracked in git)
 [[ -f ~/.local.zshrc ]] && source ~/.local.zshrc
 
