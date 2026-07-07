@@ -4,9 +4,9 @@
 
 ## プラグイン一覧
 
-### sparkline-statusline (v1.0.0)
+### sparkline-statusline (v1.1.0)
 
-スパークラインゲージでコンテキスト使用率・レートリミット (5h / 7d) を Claude Code のステータスラインに表示する。
+スパークラインゲージでコンテキスト使用率・レートリミット (5h / 7d) を Claude Code のステータスラインに表示する。現在ブランチに紐づく PR は OSC 8 ハイパーリンクとして表示し、Cmd/Ctrl+Click で開ける。
 → [sparkline-statusline/README.md](sparkline-statusline/README.md)
 
 ### pr-bot-watcher (v0.2.2)

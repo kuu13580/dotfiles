@@ -40,11 +40,27 @@ def fmt(label, pct):
     return f'{DIM}{label}{R} {gradient(pct)}{spark_gauge(pct)}{R} {p}%'
 
 model = data.get('model', {}).get('display_name', 'Claude')
-parts = [model]
+line1 = [model]
+line2 = []
+
+pr = data.get('pr') or {}
+pr_number = pr.get('number')
+if pr_number:
+    pr_url = pr.get('url')
+    state_map = {
+        'approved':          ('\033[32m', '✓'),
+        'changes_requested': ('\033[31m', '✗'),
+        'pending':           ('\033[33m', '•'),
+        'draft':             (DIM,        '•'),
+    }
+    color, icon = state_map.get(pr.get('review_state'), ('', ''))
+    label = f'#{pr_number}'
+    text = f'\033]8;;{pr_url}\a{label}\033]8;;\a' if pr_url else label
+    line1.append(f'{color}{icon}{R} {text}' if icon else text)
 
 ctx = data.get('context_window', {}).get('used_percentage')
 if ctx is not None:
-    parts.append(fmt('ctx', ctx))
+    line2.append(fmt('ctx', ctx))
 
 five_hour = data.get('rate_limits', {}).get('five_hour', {})
 five = five_hour.get('used_percentage')
@@ -53,12 +69,16 @@ if five is not None:
     if resets_at is not None:
         reset_time = datetime.fromtimestamp(resets_at, tz=timezone.utc).astimezone()
         reset_str = reset_time.strftime('%H:%M')
-        parts.append(f'{fmt("5h", five)} {DIM}(reset {reset_str}){R}')
+        line2.append(f'{fmt("5h", five)} {DIM}(reset {reset_str}){R}')
     else:
-        parts.append(fmt('5h', five))
+        line2.append(fmt('5h', five))
 
 week = data.get('rate_limits', {}).get('seven_day', {}).get('used_percentage')
 if week is not None:
-    parts.append(fmt('7d', week))
+    line2.append(fmt('7d', week))
 
-print(f' {DIM}│{R} '.join(parts), end='')
+sep = f' {DIM}│{R} '
+lines = [sep.join(line1)]
+if line2:
+    lines.append(sep.join(line2))
+print('\n'.join(lines), end='')
