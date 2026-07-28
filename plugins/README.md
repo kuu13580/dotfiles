@@ -29,6 +29,11 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 揺らぐ事実 (ライブラリのバージョン、料金、リリース、最新動向など) が話題になったら、内部知識で即答せず WebSearch / WebFetch で一次情報を取りに行ってから回答させる skill。
 → [web-search/README.md](web-search/README.md)
 
+### check-review-validity (v1.0.0)
+
+自分が書いた未 submit のドラフトレビュー (GitHub の Pending review) を submit 前に検証し、各指摘を ✅ 妥当 / ✏️ 要修正 / ❌ 取り下げ推奨 / ❓ 要確認 に分類して理由付きでレポートする read-only スキル。`/check-review-validity [<PR番号> | <PR URL>]`。
+→ [check-review-validity/README.md](check-review-validity/README.md)
+
 ---
 
 新しいプラグインを追加したら、この一覧と `.claude-plugin/marketplace.json` に追記する。
