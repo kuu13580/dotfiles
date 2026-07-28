@@ -1,0 +1,6 @@
+{
+  "name": "check-review-validity",
+  "description": "GitHub PR に自分が書いた未 submit のドラフトレビュー (Pending review) を submit 前に検証し、各指摘を妥当 / 要修正 / 取り下げ推奨 / 要確認 に分類して理由付きでレポートする read-only スキル。",
+  "version": "1.0.0",
+  "author": { "name": "m-tojo" }
+}

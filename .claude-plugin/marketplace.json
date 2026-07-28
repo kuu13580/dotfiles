@@ -28,6 +28,11 @@
       "name": "web-search",
       "source": "./plugins/web-search",
       "description": "内部知識ではなくWebSearch/WebFetchで最新情報を調査してから回答させる。ライブラリのバージョン、料金、リリース、最新動向など揺らぐ事実が話題になったら自動発動"
+    },
+    {
+      "name": "check-review-validity",
+      "source": "./plugins/check-review-validity",
+      "description": "自分が書いた未submitのドラフトレビュー(Pending review)をsubmit前に検証し、各指摘を妥当/要修正/取り下げ推奨/要確認に分類して理由付きでレポートするread-onlyスキル"
     }
   ]
 }
