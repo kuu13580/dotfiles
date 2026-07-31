@@ -293,6 +293,77 @@ test_rm_noninteractive() {
   _assert_contains "$out" "unknown option" "unknown option rejected"
 }
 
+test_rm_force() {
+  echo "[wt rm force (dirty worktree)]"
+  local repo="$TMP/repo-rmforce"
+  _mkrepo "$repo"
+  echo "tracked" > "$repo/tracked.txt"
+  git -C "$repo" add tracked.txt
+  git -C "$repo" commit -q -m "add tracked"
+
+  local out rc
+  # untracked ファイルが残っている worktree は -y だけでは消さず、一覧と導線を出して失敗する
+  _addwt "$repo" "branch-rm-dirty" "$TMP/rm-dirty"
+  mkdir -p "$TMP/rm-dirty/tmp"
+  echo junk > "$TMP/rm-dirty/tmp/junk.txt"
+  echo junk > "$TMP/rm-dirty/一時ファイル.txt"
+
+  out="$(cd "$repo" && wt rm rm-dirty -y 2>&1)"; rc=$?
+  _assert_contains "$out" "contains modified or untracked files" "git の fatal をそのまま表示"
+  _assert_contains "$out" "?? tmp/" "残存ファイルを一覧表示"
+  # core.quotePath=false: 日本語名が "\344\270\200..." に化けないこと
+  _assert_contains "$out" "?? 一時ファイル.txt" "マルチバイト名をエスケープせず表示"
+  # 導線は必ず絶対パス (basename だと同名 worktree があるとき別物を消す提案になる)
+  _assert_contains "$out" "wt rm '$TMP/rm-dirty' -y -f" "force 導線を絶対パスで案内"
+  _assert_neq "$rc" "0" "force なしで消せなければ nonzero exit"
+  if [[ -d "$TMP/rm-dirty" ]]; then _pass "-y のみでは worktree を残す"
+  else _fail "-y のみでは worktree を残す"; fi
+
+  # -f 指定で force 削除
+  out="$(cd "$repo" && wt rm rm-dirty -y -f 2>&1)"; rc=$?
+  _assert_contains "$out" "forcing" "-f は force 実行を通知"
+  _assert_contains "$out" "removed" "-f で削除完了"
+  _assert_eq "$rc" "0" "force 成功は zero exit"
+  if [[ -d "$TMP/rm-dirty" ]]; then _fail "-f で worktree dir が消える"
+  else _pass "-f で worktree dir が消える"; fi
+
+  # 追跡ファイルの変更のみでも同じ導線 (-b と併用してブランチも削除)
+  _addwt "$repo" "branch-rm-mod" "$TMP/rm-mod"
+  echo modified >> "$TMP/rm-mod/tracked.txt"
+  out="$(cd "$repo" && wt rm rm-mod -y 2>&1)"
+  _assert_contains "$out" "M tracked.txt" "modified なファイルも一覧表示"
+  out="$(cd "$repo" && wt rm rm-mod -y -f -b 2>&1)"
+  _assert_contains "$out" "removed" "modified 済みでも -f で削除"
+  if git -C "$repo" show-ref --verify -q refs/heads/branch-rm-mod; then
+    _fail "-f -b でブランチも削除"
+  else
+    _pass "-f -b でブランチも削除"
+  fi
+
+  # 一覧は 20 件で打ち切り、残数を出す
+  _addwt "$repo" "branch-rm-many" "$TMP/rm-many"
+  local i
+  for (( i = 1; i <= 25; i++ )); do echo x > "$TMP/rm-many/junk-$i.txt"; done
+  out="$(cd "$repo" && wt rm rm-many -y 2>&1)"
+  _assert_contains "$out" "... and 5 more" "20件超は残数のみ表示"
+  out="$(cd "$repo" && wt rm rm-many -y -f 2>&1)"
+  _assert_contains "$out" "removed" "打ち切りケースも -f で削除できる"
+
+  # locked worktree は --force でも消えない → 案内のみ (自動で二重 force しない)
+  _addwt "$repo" "branch-rm-locked" "$TMP/rm-locked"
+  git -C "$repo" worktree lock "$TMP/rm-locked"
+  out="$(cd "$repo" && wt rm rm-locked -y -f 2>&1)"; rc=$?
+  _assert_contains "$out" "is locked" "locked worktree を検出"
+  _assert_contains "$out" "--force --force" "二重 force を案内"
+  _assert_neq "$rc" "0" "locked は削除できず nonzero exit"
+  if [[ -d "$TMP/rm-locked" ]]; then _pass "locked worktree は消さずに残す"
+  else _fail "locked worktree は消さずに残す"; fi
+  git -C "$repo" worktree unlock "$TMP/rm-locked"
+
+  out="$(wt help 2>&1)"
+  _assert_contains "$out" "-f  force removal" "help が -f を説明"
+}
+
 test_new_happy_path() {
   echo "[wt new end-to-end (parent pattern)]"
   local repo="$TMP/repo-new"
@@ -392,6 +463,7 @@ test_resolve_target_parent
 test_resolve_name
 test_set_noninteractive
 test_rm_noninteractive
+test_rm_force
 test_new_happy_path
 test_postnew_hook
 test_trim

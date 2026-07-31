@@ -35,7 +35,7 @@ git worktree を fzf ベースの `wt` 系コマンドで管理するプラグ�
 | `wt new -b <branch> <dir> [base] [-d desc]` | 新規作成 + description 記録 (`<dir>` はディレクトリ名のみ、配置先は自動検出)。引数なしで叩くと対話フォーム (下記、tty のみ) |
 | `wt ls [-p]` | メタデータ付き一覧 (DIR / BRANCH / AGE / DESC)。`-p` で絶対 PATH 列を追加 |
 | `wt set [<name>] ["<desc>"]` | description 編集/設定。無引数 → fzf + `$EDITOR`、`<name> "<desc>"` で非対話 (`""` でクリア) |
-| `wt rm [<name>...] [-y] [-b]` | worktree 削除。無引数 → fzf 複数選択 + 対話確認、`-y` で確認スキップ、`-b` でブランチも削除 |
+| `wt rm [<name>...] [-y] [-b] [-f]` | worktree 削除。無引数 → fzf 複数選択 + 対話確認、`-y` で確認スキップ、`-b` でブランチも削除、`-f` で dirty な worktree も強制削除 (下記) |
 | `wt claude [<name>] [-n <label>]` | `claude --bg` で Agent View に idle 投入 (プロンプト無し)。name 指定で fzf スキップ。表示名 (`-n`) は既定で `wt.description`、無ければディレクトリ名。`-n <label>` で上書き |
 | `wt cd [<name>]` | worktree に `cd` (zsh 関数のため対話シェルでのみ機能) |
 
@@ -54,6 +54,21 @@ git worktree を fzf ベースの `wt` 系コマンドで管理するプラグ�
 - base ref … fzf で既存ブランチ (ローカル / リモート) + `(default)` から選択 (`(default)` / Esc で `wt.baseRef` → HEAD)
 - 最後に内容サマリを表示し `Create? (Y/n)` で確認
 - **発動条件**: 標準入力が tty のときのみ。非 tty (Claude の `Bash`、パイプ、CI) や引数付き呼び出しは従来どおりフラグ解析され、引数不足なら usage エラー。Claude に強制している `wt new -b ... -d` フローはフォームに落ちません
+
+### dirty な worktree の削除 (`wt rm -f`)
+
+`git worktree remove` は変更済み / 未追跡ファイル (ビルド生成物・tmp ファイル等) が残っていると `fatal: ... contains modified or untracked files` で失敗します。`wt rm` はこの失敗を検知したら、
+
+1. git のエラーをそのまま表示し
+2. 残っているファイルを `git status --porcelain` で一覧表示 (20 件超は `... and N more`) したうえで
+3. force 削除するかを判断します
+   - **tty**: worktree ごとに `Force delete <path>? (y/N)` で確認
+   - **`-f` 指定**: 確認なしで `git worktree remove --force`
+   - **`-y` のみ / 非 tty**: force せず「`wt rm <name> -y -f`」を案内して終了 (終了コード 1)
+
+`--force` でも消えない locked worktree の場合は `git worktree unlock` / `remove --force --force` を案内します (自動では実行しません)。削除できなかった worktree が1つでもあれば `wt rm` は非ゼロで終了します。
+
+> **一覧に出るもの ≠ 消えるもの**: `.gitignore` されたファイル (`node_modules`、`.env`、`wt.postNew` で配置した鍵など) は git の clean 判定の対象外なので**この一覧には出ませんが、worktree を削除すればディレクトリごと消えます** (force 不要)。復元が要るファイルは削除前に退避してください。
 
 ### メタデータ
 
