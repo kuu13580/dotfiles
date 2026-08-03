@@ -479,6 +479,18 @@ function _wt_print_leftovers() {
   fi
 }
 
+# <path> の worktree が locked か判定する (locked なら 0)。
+# git のエラーメッセージ ("cannot remove a locked working tree") は翻訳されうるので、
+# 判定は翻訳されない porcelain 出力の `locked` 行で行う。
+function _wt_is_locked() {
+  local p="$1"
+  git worktree list --porcelain 2>/dev/null | awk -v target="$p" '
+    /^worktree / { cur = substr($0,10) }
+    /^locked/    { if (cur == target) hit = 1 }
+    END          { exit(hit ? 0 : 1) }
+  '
+}
+
 # worktree を1つ削除する。通常削除が失敗したら git のエラーと残存ファイルを見せ、
 # force 削除するかを決める (tty=都度確認 / -f=無条件 / それ以外=force せず失敗)。
 #   $1 path, $2 force (1 = -f 指定済み), $3 auto (1 = -y 指定済み)
@@ -518,7 +530,7 @@ function _wt_rm_one() {
   fi
   [[ -n "$err" ]] && printf '%s\n' "$err" >&2
   # locked worktree は --force 1回では消えない (git 側の仕様で二重 --force が必要)
-  if [[ "$err" == *"locked working tree"* ]]; then
+  if _wt_is_locked "$p"; then
     echo "  '$p' is locked: unlock first (git worktree unlock '$p')" >&2
     echo "  or force twice: git worktree remove --force --force '$p'" >&2
   fi
@@ -717,11 +729,11 @@ USAGE
                                        <name> "<desc>" → non-interactive ("" clears)
   wt rm [<name>...] [-y] [-b] [-f]   remove worktree(s)
                                        no names → fzf multi-select
-                                       -y  skip confirmation (non-interactive)
-                                       -b  also delete branches
-                                       -f  force removal when the worktree still has
-                                           modified/untracked files (without -f on a
-                                           tty you are asked per worktree instead)
+                                       -y, --yes     skip confirmation (non-interactive)
+                                       -b, --branch  also delete branches
+                                       -f, --force   force removal when the worktree still
+                                                     has modified/untracked files (without
+                                                     -f on a tty you are asked per worktree)
   wt claude [<name>] [-n <label>]    claude --bg in the worktree (idle session)
                                        <name>      → skip fzf (non-interactive)
                                        -n <label>  → session display name

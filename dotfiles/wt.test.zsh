@@ -351,7 +351,12 @@ test_rm_force() {
 
   # locked worktree は --force でも消えない → 案内のみ (自動で二重 force しない)
   _addwt "$repo" "branch-rm-locked" "$TMP/rm-locked"
-  git -C "$repo" worktree lock "$TMP/rm-locked"
+  git -C "$repo" worktree lock --reason "検証用" "$TMP/rm-locked"
+  # 判定は翻訳されうる英語エラー文字列ではなく porcelain の locked 行で行う
+  if (cd "$repo" && _wt_is_locked "$TMP/rm-locked"); then _pass "_wt_is_locked が locked を検出"
+  else _fail "_wt_is_locked が locked を検出"; fi
+  if (cd "$repo" && _wt_is_locked "$repo"); then _fail "未 lock の worktree は locked 判定にしない"
+  else _pass "未 lock の worktree は locked 判定にしない"; fi
   out="$(cd "$repo" && wt rm rm-locked -y -f 2>&1)"; rc=$?
   _assert_contains "$out" "is locked" "locked worktree を検出"
   _assert_contains "$out" "--force --force" "二重 force を案内"
@@ -359,9 +364,11 @@ test_rm_force() {
   if [[ -d "$TMP/rm-locked" ]]; then _pass "locked worktree は消さずに残す"
   else _fail "locked worktree は消さずに残す"; fi
   git -C "$repo" worktree unlock "$TMP/rm-locked"
+  if (cd "$repo" && _wt_is_locked "$TMP/rm-locked"); then _fail "unlock 後は locked 判定が解除される"
+  else _pass "unlock 後は locked 判定が解除される"; fi
 
   out="$(wt help 2>&1)"
-  _assert_contains "$out" "-f  force removal" "help が -f を説明"
+  _assert_contains "$out" "-f, --force" "help が -f/--force を説明"
 }
 
 test_new_happy_path() {

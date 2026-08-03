@@ -64,7 +64,7 @@ git worktree を fzf ベースの `wt` 系コマンドで管理するプラグ�
 3. force 削除するかを判断します
    - **tty**: worktree ごとに `Force delete <path>? (y/N)` で確認
    - **`-f` 指定**: 確認なしで `git worktree remove --force`
-   - **`-y` のみ / 非 tty**: force せず「`wt rm <name> -y -f`」を案内して終了 (終了コード 1)
+   - **`-y` のみ / 非 tty**: force せず「`wt rm '<絶対パス>' -y -f`」を案内して終了 (終了コード 1)。案内は必ず**絶対パス**で出る (同名 worktree が複数あるとき、名前指定だと別の worktree を消してしまうため)
 
 `--force` でも消えない locked worktree の場合は `git worktree unlock` / `remove --force --force` を案内します (自動では実行しません)。削除できなかった worktree が1つでもあれば `wt rm` は非ゼロで終了します。
 

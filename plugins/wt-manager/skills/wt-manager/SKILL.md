@@ -98,7 +98,7 @@ wt rm <name> -y [-b] [-f]                      # 削除 (-y必須。-bでブラ�
 wt claude <name>                               # 並列セッション投入 (idle)
 ```
 
-**削除が dirty で失敗したら勝手に `-f` しない**: `wt rm <name> -y` は未追跡/変更済みファイル (tmp・ビルド生成物等) が残っていると `fatal: ... contains modified or untracked files` で失敗し、残存ファイル一覧を出して終了コード 1 を返す。Claude はこの一覧をそのままユーザーに提示し、**force 削除してよいか確認を取ってから** `wt rm <name> -y -f` を実行する (`-f` は未コミットの変更ごと消すため、非対話では自動 force しない設計)。
+**削除が dirty で失敗したら勝手に `-f` しない**: `wt rm <name> -y` は未追跡/変更済みファイル (tmp・ビルド生成物等) が残っていると `fatal: ... contains modified or untracked files` で失敗し、残存ファイル一覧を出して終了コード 1 を返す。Claude はこの一覧をそのままユーザーに提示し、**force 削除してよいか確認を取ってから** force 削除する。実行するコマンドは**失敗時に案内された絶対パス入りのもの** (`wt rm '<絶対パス>' -y -f`) をそのまま使う — 名前指定に読み替えると、同名 worktree が複数あるとき別の worktree を消してしまう。`-f` は未コミットの変更ごと消すため、非対話では自動 force しない設計。
 
 **`wt cd` だけは効かない**(後述「`wt cd` の制約」)。worktree モデルの二重化(harness の `.claude/worktrees/` と wt 規約 `<repo親>/<dir>`)を避けるため、worktree の「移動」「削除」は Rule 5/6 に従う。これらは wt-manager の **PreToolUse hook で機械的に強制**される(`EnterWorktree` の name モードと `ExitWorktree` の `remove` を deny)。
 
