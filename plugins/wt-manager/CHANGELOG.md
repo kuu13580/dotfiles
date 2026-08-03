@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-07-31
+
+### Added
+
+- **`wt rm` の削除失敗時に残存ファイルを提示して force 削除へ導線 (`-f`)**: tmp ファイル等が残っていて `git worktree remove` が `fatal: ... contains modified or untracked files` で失敗するケースに対応。失敗を検知したら git のエラーに続けて `git -c core.quotePath=false status --porcelain --ignore-submodules=none` (git 本体が clean 判定に使うのと同じコマンド + 日本語ファイル名が8進エスケープにならないよう quotePath 抑止) の一覧を最大20件表示 (超過分は `... and N more`) し、tty なら worktree ごとに `Force delete <path>? (y/N)`、`-f` 指定なら確認なしで `--force`、`-y` のみ / 非tty なら force せず `wt rm '<絶対パス>' -y -f` を案内して終了する (作業中ファイルの消失に明示同意を要求)。案内を絶対パスにしているのは、名前指定だと `_wt_resolve_name` の先勝ち解決により同名 worktree が複数あるとき別の worktree を消す提案になるため。`--force` でも消えない locked worktree は `git worktree unlock` / `--force --force` を案内するのみ (自動実行しない。locked 判定は翻訳されうる英語エラー文字列ではなく `git worktree list --porcelain` の `locked` 行で行う)。削除処理は `_wt_rm_one` / `_wt_print_leftovers` に切り出し
+
+### Fixed
+
+- **`wt rm` が削除失敗しても終了コード 0 を返していた問題**: 失敗時の最後の文が `echo` だったため常に 0。削除できなかった worktree があれば非ゼロで終了するように (テスト23件追加、計 102 アサーション)
+
 ## [1.9.0] - 2026-06-30
 
 ### Changed

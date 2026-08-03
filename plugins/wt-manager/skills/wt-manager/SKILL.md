@@ -94,9 +94,11 @@ wt set <name> "<desc>"  # 非対話で直接設定 ("" でクリア)
 wt new -b <branch> <dir> [base] -d "<目的>"   # 新規作成
 wt ls -p                                       # 一覧 (-p で絶対PATH列付き)
 wt set <name> "<desc>"                         # description設定 ("" でクリア)
-wt rm <name> -y [-b]                           # 削除 (-y必須。-bでブランチも)
+wt rm <name> -y [-b] [-f]                      # 削除 (-y必須。-bでブランチも、-fで強制削除)
 wt claude <name>                               # 並列セッション投入 (idle)
 ```
+
+**削除が dirty で失敗したら勝手に `-f` しない**: `wt rm <name> -y` は未追跡/変更済みファイル (tmp・ビルド生成物等) が残っていると `fatal: ... contains modified or untracked files` で失敗し、残存ファイル一覧を出して終了コード 1 を返す。Claude はこの一覧をそのままユーザーに提示し、**force 削除してよいか確認を取ってから** force 削除する。実行するコマンドは**失敗時に案内された絶対パス入りのもの** (`wt rm '<絶対パス>' -y -f`) をそのまま使う — 名前指定に読み替えると、同名 worktree が複数あるとき別の worktree を消してしまう。`-f` は未コミットの変更ごと消すため、非対話では自動 force しない設計。
 
 **`wt cd` だけは効かない**(後述「`wt cd` の制約」)。worktree モデルの二重化(harness の `.claude/worktrees/` と wt 規約 `<repo親>/<dir>`)を避けるため、worktree の「移動」「削除」は Rule 5/6 に従う。これらは wt-manager の **PreToolUse hook で機械的に強制**される(`EnterWorktree` の name モードと `ExitWorktree` の `remove` を deny)。
 
@@ -151,7 +153,7 @@ EnterWorktree({ path: "<作成された絶対パス>" })   # ② 作成した wo
 | `wt new -b <branch> <dir> [base] [-d desc]` | 新規作成 + description記録                                   | 作成のみ、cd/claude起動は連動しない            |
 | `wt ls [-p]`                                | メタデータ付き一覧                                           | DIR / BRANCH / AGE / DESC。`-p` で絶対PATH列を追加 |
 | `wt set [<name>] ["<desc>"]`                | description編集/設定                                         | 無引数→fzf+$EDITOR。`<name> "<desc>"` で非対話 ("" でクリア) |
-| `wt rm [<name>...] [-y] [-b]`               | worktree削除                                                 | 無引数→fzf複数選択+対話確認。`-y` 確認スキップ、`-b` ブランチも削除 |
+| `wt rm [<name>...] [-y] [-b] [-f]`          | worktree削除                                                 | 無引数→fzf複数選択+対話確認。`-y` 確認スキップ、`-b` ブランチも削除、`-f` dirty でも強制削除 |
 | `wt claude [<name>] [-n <label>]`           | Agent View に背景セッション投入 (idle)                       | name指定でfzfスキップ。表示名は既定で `wt.description`、無ければディレクトリ名。`-n` で上書き |
 | `wt cd <name>`                              | worktreeに移動                                               | cwd伝播のため Claudeの`Bash`/CIでは無意味 (→ `EnterWorktree({path})`) |
 

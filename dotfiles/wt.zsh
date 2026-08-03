@@ -454,22 +454,106 @@ function _wt_set() {
   fi
 }
 
-# ---------- wt rm [<name>...] [-y] [-b] --------------------------------------
+# ---------- wt rm [<name>...] [-y] [-b] [-f] ---------------------------------
+
+# 削除を阻んでいるファイルを列挙する (何も無ければ何も出さずに 1 を返す)。
+# `git worktree remove` 自身が clean 判定に使うのと同じコマンド・同じオプションを叩くので、
+# ここに出る行がそのまま「削除できない理由」になる。長大な一覧で端末を流さないよう 20 件で打ち切る。
+# core.quotePath=false は日本語等のファイル名が 8進エスケープ ("\344\270\200...") になるのを防ぐため。
+function _wt_print_leftovers() {
+  local p="$1"
+  local -a status_cmd=(-C "$p" -c core.quotePath=false status --porcelain --ignore-submodules=none)
+  local out
+  out="$(git "${status_cmd[@]}" 2>/dev/null)"
+  [[ -z "$out" ]] && return 1
+
+  local -a lines=("${(@f)out}")
+  local -i max=20 i
+  for (( i = 1; i <= ${#lines[@]} && i <= max; i++ )); do
+    printf '  %s\n' "${lines[i]}"
+  done
+  if (( ${#lines[@]} > max )); then
+    # 案内するコマンドは実際に叩いたものをそのまま組み立てる (ズレ防止)
+    printf '  ... and %d more (git %s)\n' \
+           "$(( ${#lines[@]} - max ))" "${(j: :)${(q-)status_cmd[@]}}"
+  fi
+}
+
+# <path> の worktree が locked か判定する (locked なら 0)。
+# git のエラーメッセージ ("cannot remove a locked working tree") は翻訳されうるので、
+# 判定は翻訳されない porcelain 出力の `locked` 行で行う。
+function _wt_is_locked() {
+  local p="$1"
+  git worktree list --porcelain 2>/dev/null | awk -v target="$p" '
+    /^worktree / { cur = substr($0,10) }
+    /^locked/    { if (cur == target) hit = 1 }
+    END          { exit(hit ? 0 : 1) }
+  '
+}
+
+# worktree を1つ削除する。通常削除が失敗したら git のエラーと残存ファイルを見せ、
+# force 削除するかを決める (tty=都度確認 / -f=無条件 / それ以外=force せず失敗)。
+#   $1 path, $2 force (1 = -f 指定済み), $3 auto (1 = -y 指定済み)
+# 戻り値: 0 = 削除できた / 1 = 削除しなかった
+function _wt_rm_one() {
+  local p="$1"
+  local -i force="$2" auto="$3"
+  local err
+
+  if err="$(git worktree remove "$p" 2>&1)"; then
+    [[ -n "$err" ]] && printf '%s\n' "$err" >&2
+    return 0
+  fi
+  [[ -n "$err" ]] && printf '%s\n' "$err" >&2
+  _wt_print_leftovers "$p" >&2
+
+  if (( ! force )); then
+    # 非対話 (-y 指定 / 非tty) で勝手に force しない。作業中のファイルを消す操作は明示同意を必須にする。
+    if (( auto )) || [[ ! -t 0 ]]; then
+      # 案内は必ず絶対パスで出す。basename だと _wt_resolve_name の先勝ち解決により
+      # 同名 worktree が複数あるとき別の worktree を消す提案になってしまう。
+      echo "  not removed: $p (force with: wt rm '$p' -y -f)" >&2
+      return 1
+    fi
+    printf 'Force delete %s? (y/N): ' "$p"
+    local ans; read -r ans
+    if [[ "$ans" != [yY]* ]]; then
+      echo "  kept: $p" >&2
+      return 1
+    fi
+  fi
+
+  echo "  forcing: git worktree remove --force '$p'"
+  if err="$(git worktree remove --force "$p" 2>&1)"; then
+    [[ -n "$err" ]] && printf '%s\n' "$err" >&2
+    return 0
+  fi
+  [[ -n "$err" ]] && printf '%s\n' "$err" >&2
+  # locked worktree は --force 1回では消えない (git 側の仕様で二重 --force が必要)
+  if _wt_is_locked "$p"; then
+    echo "  '$p' is locked: unlock first (git worktree unlock '$p')" >&2
+    echo "  or force twice: git worktree remove --force --force '$p'" >&2
+  fi
+  return 1
+}
+
 #   no names → fzf multi-select (interactive)
 #   <name>...→ skip fzf
 #   -y       → skip "Proceed?" confirmation (required for non-interactive use)
 #   -b       → also delete branches (without -b in -y mode, branches are kept)
+#   -f       → force removal when the worktree is dirty (tty では失敗ごとに y/N を確認)
 function _wt_rm() {
   _wt_check_deps || return 1
 
-  local auto=0 branch_flag=0
+  local auto=0 branch_flag=0 force_flag=0
   local -a names=()
   while (( $# > 0 )); do
     case "$1" in
       -y|--yes)    auto=1; shift ;;
       -b|--branch) branch_flag=1; shift ;;
+      -f|--force)  force_flag=1; shift ;;
       -*) echo "wt rm: unknown option: $1" >&2
-          echo "Usage: wt rm [<name>...] [-y] [-b]" >&2
+          echo "Usage: wt rm [<name>...] [-y] [-b] [-f]" >&2
           return 1 ;;
       *) names+=("$1"); shift ;;
     esac
@@ -516,12 +600,13 @@ function _wt_rm() {
     fi
   fi
 
+  local -i failed=0
   for p in "${paths[@]}"; do
     local branch=""
     branch="$(git -C "$p" rev-parse --abbrev-ref HEAD 2>/dev/null)"
     [[ "$branch" == HEAD ]] && branch=""
 
-    if git worktree remove "$p"; then
+    if _wt_rm_one "$p" "$force_flag" "$auto"; then
       echo "  removed: $p"
       if [[ "$del_branch" == [yY]* && -n "$branch" ]]; then
         if git branch -d "$branch" 2>/dev/null; then
@@ -531,9 +616,12 @@ function _wt_rm() {
         fi
       fi
     else
-      echo "  failed to remove: $p (try: git worktree remove --force '$p')" >&2
+      (( failed += 1 ))
     fi
   done
+
+  (( failed > 0 )) && return 1
+  return 0
 }
 
 # ---------- wt claude [<name>] [-t [task]] -----------------------------------
@@ -639,10 +727,13 @@ USAGE
                                        no args → fzf select + $EDITOR/prompt
                                        <name>  → skip fzf (then $EDITOR/prompt)
                                        <name> "<desc>" → non-interactive ("" clears)
-  wt rm [<name>...] [-y] [-b]        remove worktree(s)
+  wt rm [<name>...] [-y] [-b] [-f]   remove worktree(s)
                                        no names → fzf multi-select
-                                       -y  skip confirmation (non-interactive)
-                                       -b  also delete branches
+                                       -y, --yes     skip confirmation (non-interactive)
+                                       -b, --branch  also delete branches
+                                       -f, --force   force removal when the worktree still
+                                                     has modified/untracked files (without
+                                                     -f on a tty you are asked per worktree)
   wt claude [<name>] [-n <label>]    claude --bg in the worktree (idle session)
                                        <name>      → skip fzf (non-interactive)
                                        -n <label>  → session display name
