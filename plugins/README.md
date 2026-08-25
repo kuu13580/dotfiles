@@ -14,11 +14,6 @@
 GitHub PR の bot レビューコメント (Copilot / Claude / Gemini 等) を3分間隔で監視し、検出時点で cron を自己削除して修正要否を提案するワンショット型ウォッチャー。`/pr-bot-watcher [<PR番号> | stop]`。
 → [pr-bot-watcher/README.md](pr-bot-watcher/README.md)
 
-### html-output-generator (v1.0.0)
-
-会話内容や markdown ファイルを sonnet サブエージェント経由でシンプルで見やすい HTML に変換する (重い生成処理を委譲してトークン消費を抑制)。`/html-output [<markdown-file-path>]`。
-→ [html-output-generator/README.md](html-output-generator/README.md)
-
 ### wt-manager (v1.9.1)
 
 git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktree の用途を git config に記録する。Claude には `git worktree add` の直叩きを避け `wt new` 経由での作成を促す。
@@ -37,3 +32,4 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 ---
 
 新しいプラグインを追加したら、この一覧と `.claude-plugin/marketplace.json` に追記する。
+廃止するプラグインは削除せず `deprecated/` に退避する → [deprecated/README.md](deprecated/README.md)
