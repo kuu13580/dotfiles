@@ -1,5 +1,7 @@
 # html-output-generator
 
+> **DEPRECATED (2026-08-26)**: Claude Code 標準の Artifact 機能で代替できるため marketplace から除外。実体は参照・復活用に保管。
+
 会話内容や markdown ファイルをシンプルで見やすい HTML に変換するプラグインです。HTML 組み立ては**トークン消費の少ない sonnet サブエージェント (`html-builder`) に委譲**することで Opus の負担を抑えます。
 
 ## 使い方

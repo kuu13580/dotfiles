@@ -15,11 +15,6 @@
       "description": "GitHub PRのbotレビューコメントを3分間隔で監視し、検出時点で自己停止してユーザーに修正要否を提案する"
     },
     {
-      "name": "html-output-generator",
-      "source": "./plugins/html-output-generator",
-      "description": "会話内容やmarkdownをsonnetサブエージェント経由でシンプルなHTMLに変換"
-    },
-    {
       "name": "wt-manager",
       "source": "./plugins/wt-manager",
       "description": "git worktreeをfzfベースのwt系コマンドで管理し、各worktreeの用途をgit configに記録。Claudeにgit worktree add直叩きを避けwt new経由で作成させる"
