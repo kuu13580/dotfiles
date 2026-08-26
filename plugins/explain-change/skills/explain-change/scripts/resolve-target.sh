@@ -232,7 +232,13 @@ elif [ "$ARG" != "HEAD" ] && [ "$ARG" != "@" ] && BRANCH_REF=$(resolve_branch_re
   # 黙ってどちらかに倒すと「別のものを解説した」ことに気づけないので確認を取る。
   # git は refname を SHA より優先するため ^{commit} では回避できない。全長 SHA を案内する。
   if [[ "$ARG" =~ ^[0-9a-fA-F]{7,39}$ ]]; then
-    AMBIG=$(git rev-parse --disambiguate="$ARG" 2>/dev/null | head -n 1)
+    # --disambiguate は blob / tree / tag も返すので、commit に peel できるものだけを候補にする。
+    # blob と衝突しただけのブランチ名で exit 2 を出すと、正当な指定を弾くことになる。
+    AMBIG=""
+    for oid in $(git rev-parse --disambiguate="$ARG" 2>/dev/null); do
+      AMBIG=$(git rev-parse --verify --quiet "${oid}^{commit}" 2>/dev/null) && break
+      AMBIG=""
+    done
     if [ -n "$AMBIG" ]; then
       undecided "'${ARG}' はブランチ名としても commit の SHA 接頭辞としても解決できます。ブランチなら '${BRANCH_REF}'、commit なら全長 SHA '${AMBIG}' を指定してください。"
     fi
