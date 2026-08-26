@@ -14,6 +14,11 @@ git rev-parse --git-dir >/dev/null 2>&1 || die "git リポジトリの中で実�
 
 ARG="${1:-}"
 
+# diff_command に埋め込む値をシェル安全にクォートする。
+# git は ref 名に $( ) ` ; | > ' を許すため、生のまま連結すると
+# diff_command を実行した時点でコマンド置換やリダイレクトとして解釈される。
+shq() { printf '%q' "$1"; }
+
 default_branch() {
   local d c
   if d=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null); then
@@ -71,6 +76,13 @@ emit() {
 # 存在判定で当たった ref をそのまま git に渡す必要がある。
 resolve_branch_ref() {
   local a="$1" c
+  # ^ ~ : @{ はブランチ名に使えない (git check-ref-format が弾く) ので、
+  # これらを含む引数はリビジョン式。ブランチとして解決してはいけない。
+  case "$a" in
+    *[\^~:]* | *@\{*) return 1 ;;
+    # refs/ で始まる完全 ref はそのまま試す (SHA と紛れるブランチ名の曖昧回避に使う)
+    refs/*) git rev-parse --verify --quiet "$a" >/dev/null 2>&1 && { echo "$a"; return 0; }; return 1 ;;
+  esac
   for c in "refs/heads/${a}" "refs/remotes/${a}" "refs/remotes/origin/${a}"; do
     if git rev-parse --verify --quiet "$c" >/dev/null 2>&1; then echo "$c"; return 0; fi
   done
@@ -99,8 +111,10 @@ resolve_worktree() {
 }
 
 # ---------------------------------------------------------------- pr
+#   $1 PR 番号、$2 owner/repo (カレントリポジトリなら空)
 resolve_pr() {
-  local num="$1" repo_flag="$2"
+  local num="$1" repo_slug="$2" repo_flag=""
+  [ -n "$repo_slug" ] && repo_flag="--repo ${repo_slug}"
   command -v gh >/dev/null 2>&1 || die "gh CLI が見つかりません。PR を対象にするには gh が必要です。"
   local view
   # shellcheck disable=SC2086
@@ -121,10 +135,11 @@ resolve_pr() {
   fi
 
   # shellcheck disable=SC2086
-  files=$(gh pr diff "$num" $repo_flag --name-only 2>/dev/null | jq -R -s 'split("\n") | map(select(length > 0))')
+  files=$(gh pr diff "$num" $repo_flag --name-only 2>/dev/null | jq -R -s 'split("\n") | map(select(length > 0))') \
+    || die "PR #${num} の変更ファイル一覧を取得できませんでした。"
 
   local diff_cmd="gh pr diff ${num}"
-  [ -n "$repo_flag" ] && diff_cmd="${diff_cmd} ${repo_flag}"
+  [ -n "$repo_slug" ] && diff_cmd="${diff_cmd} --repo $(shq "$repo_slug")"
 
   jq -n \
     --arg kind "pr" \
@@ -176,7 +191,7 @@ resolve_range() {
   fi
   meta=$(git_meta "$spec" "$log_range")
   state=$(local_code_state "$head")
-  emit "range" "範囲 ${spec}" "$base" "$head" "git diff ${spec}" "$state" "$meta"
+  emit "range" "範囲 ${spec}" "$base" "$head" "git diff $(shq "$spec")" "$state" "$meta"
 }
 
 # ---------------------------------------------------------------- branch
@@ -190,7 +205,7 @@ resolve_branch() {
   state=$(local_code_state "$ref")
   extra=$(jq -n --arg db "$db" --arg ref "$ref" '{default_branch: $db, resolved_ref: $ref}')
   emit "branch" "ブランチ ${display} (${db} からの差分)" "$mb" "$display" \
-       "git diff ${mb}..${ref}" "$state" "$meta" "$extra"
+       "git diff $(shq "${mb}..${ref}")" "$state" "$meta" "$extra"
 }
 
 # ---------------------------------------------------------------- dispatch
@@ -207,10 +222,21 @@ if [ -z "$ARG" ]; then
 elif [[ "$ARG" =~ ^[0-9]+$ ]]; then
   OUT=$(resolve_pr "$ARG" "") || exit $?
 elif [[ "$ARG" =~ ^https?://[^/]*github\.com/([^/]+)/([^/]+)/pull/([0-9]+) ]]; then
-  OUT=$(resolve_pr "${BASH_REMATCH[3]}" "--repo ${BASH_REMATCH[1]}/${BASH_REMATCH[2]}") || exit $?
+  OUT=$(resolve_pr "${BASH_REMATCH[3]}" "${BASH_REMATCH[1]}/${BASH_REMATCH[2]}") || exit $?
 elif [[ "$ARG" == *".."* ]]; then
   OUT=$(resolve_range "$ARG") || exit $?
+elif [[ "$ARG" =~ ^[0-9a-fA-F]{40}$ ]] && git rev-parse --verify --quiet "${ARG}^{commit}" >/dev/null 2>&1; then
+  OUT=$(resolve_commit "$ARG") || exit $?
 elif [ "$ARG" != "HEAD" ] && [ "$ARG" != "@" ] && BRANCH_REF=$(resolve_branch_ref "$ARG"); then
+  # SHA 接頭辞と同名のブランチがあるとき、どちらを解説すべきかは決められない。
+  # 黙ってどちらかに倒すと「別のものを解説した」ことに気づけないので確認を取る。
+  # git は refname を SHA より優先するため ^{commit} では回避できない。全長 SHA を案内する。
+  if [[ "$ARG" =~ ^[0-9a-fA-F]{7,39}$ ]]; then
+    AMBIG=$(git rev-parse --disambiguate="$ARG" 2>/dev/null | head -n 1)
+    if [ -n "$AMBIG" ]; then
+      undecided "'${ARG}' はブランチ名としても commit の SHA 接頭辞としても解決できます。ブランチなら '${BRANCH_REF}'、commit なら全長 SHA '${AMBIG}' を指定してください。"
+    fi
+  fi
   OUT=$(resolve_branch "$BRANCH_REF" "$ARG") || exit $?
 elif [[ "$ARG" =~ ^[0-9a-fA-F]{7,40}$ ]] && git rev-parse --verify --quiet "${ARG}^{commit}" >/dev/null 2>&1; then
   OUT=$(resolve_commit "$ARG") || exit $?

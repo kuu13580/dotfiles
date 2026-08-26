@@ -33,6 +33,8 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/explain-change/scripts/resolve-target.sh $ARGU
 | `A..B` / `A...B` | その範囲 |
 | ブランチ名 | デフォルトブランチとの merge-base からの差分 |
 
+ブランチ名が SHA 接頭辞と同じ形のときは、どちらとも解決できるので **exit 2 で確認を求める** (全長 SHA か `refs/heads/<名前>` のどちらを指定すべきかは stderr が案内する)。
+
 ### exit code
 
 | exit | 意味 | 対応 |
@@ -44,7 +46,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/explain-change/scripts/resolve-target.sh $ARGU
 ### JSON の主なフィールド
 
 - `kind` / `label`: 対象の種別と表示名。解説のタイトルに使う
-- `diff_command`: この対象の差分を取るコマンド。**そのまま実行してよい**
+- `diff_command`: この対象の差分を取るコマンド。ref はシェルクォート済みなので **そのまま実行してよい**。ただし**自分で ref を継ぎ足して組み立て直さない** (git は ref 名に `$( )` や `` ` `` を許すため、生の連結はコマンド注入になる)
 - `stat` / `files` / `commits`: 規模の把握と調査計画に使う
 - `untracked`: worktree 対象のときの未追跡ファイル。`git diff` に出ないので**別途 Read する**
 - `pr`: PR のとき、`body` (description) と `url`。意図の一次情報なので必ず読む

@@ -19,3 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ブランチ対象は完全 ref に解決してから git に渡す (git は bare name を `refs/remotes/origin/*` に DWIM しないため、リモートのみのブランチが解決できない)
 - `A...B` 指定時は log レンジを `merge-base..B` に揃える (`git diff` は merge-base 基準、`git log` は対称差なので、揃えないと files と commits が食い違う)
 - `local_code` (`exact` / `contains` / `absent`) と `dirty_worktree` を返し、調査方法を決定。マージ済み PR は `contains` と判定して diff ベースへ不要に縮退しない (merge commit は HEAD の祖先、squash / rebase merge は `mergeCommit` 経由で判定)。手元に無い場合も checkout させず精度限定を明記して続行
+- `diff_command` に埋め込む ref は `printf %q` でクォートする。git は ref 名に `$( )` / `` ` `` / `;` / `>` / `'` を許すため、生のまま連結すると SKILL.md が許可している「そのまま実行」でコマンド注入になる
+- SHA 接頭辞と同名のブランチがあるときは exit 2 で確認を求め、全長 SHA か `refs/heads/<名前>` を案内する。git は refname を SHA より優先するため `<sha>^{commit}` では回避できない
+- `gh pr diff --name-only` の失敗を exit 1 で伝播する (取得失敗を「変更ファイル 0 件」として扱わない)
