@@ -29,6 +29,11 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 自分が書いた未 submit のドラフトレビュー (GitHub の Pending review) を submit 前に検証し、各指摘を ✅ 妥当 / ✏️ 要修正 / ❌ 取り下げ推奨 / ❓ 要確認 に分類して理由付きでレポートする read-only スキル。`/check-review-validity [<PR番号> | <PR URL>]`。
 → [check-review-validity/README.md](check-review-validity/README.md)
 
+### explain-change (v1.0.0)
+
+PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
+→ [explain-change/README.md](explain-change/README.md)
+
 ---
 
 新しいプラグインを追加したら、この一覧と `.claude-plugin/marketplace.json` に追記する。

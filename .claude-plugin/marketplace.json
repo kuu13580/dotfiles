@@ -28,6 +28,11 @@
       "name": "check-review-validity",
       "source": "./plugins/check-review-validity",
       "description": "自分が書いた未submitのドラフトレビュー(Pending review)をsubmit前に検証し、各指摘を妥当/要修正/取り下げ推奨/要確認に分類して理由付きでレポートするread-onlyスキル"
+    },
+    {
+      "name": "explain-change",
+      "source": "./plugins/explain-change",
+      "description": "PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル"
     }
   ]
 }
