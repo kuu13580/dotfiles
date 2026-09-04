@@ -1,0 +1,16 @@
+{
+  "description": "SessionStart で引き継ぎ記録 (CONTEXT.md) を stdout から文脈へ流し込む。source=compact のときは記録との差分確認を促す",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/load-record.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

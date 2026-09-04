@@ -33,6 +33,11 @@
       "name": "explain-change",
       "source": "./plugins/explain-change",
       "description": "PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル"
+    },
+    {
+      "name": "prepare-context",
+      "source": "./plugins/prepare-context",
+      "description": "セッションやcompactを跨いで設計判断が失われないよう、確認した事実と決定を ~/.claude/contexts/<repo>/<key>/CONTEXT.md に残し、SessionStart で自動的に読み戻す"
     }
   ]
 }
