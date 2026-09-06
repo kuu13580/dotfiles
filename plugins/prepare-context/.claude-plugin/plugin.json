@@ -1,0 +1,6 @@
+{
+  "name": "prepare-context",
+  "description": "セッションやcompactを跨いで設計判断が失われないよう、確認した事実と決定を ~/.claude/contexts/<repo>/<key>/CONTEXT.md に残し、SessionStart で自動的に読み戻す。",
+  "version": "0.1.0",
+  "author": { "name": "m-tojo" }
+}
