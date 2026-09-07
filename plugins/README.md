@@ -34,7 +34,7 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
 → [explain-change/README.md](explain-change/README.md)
 
-### prepare-context (v0.1.0)
+### prepare-context (v0.2.0)
 
 セッションや compact を跨いでも設計判断が失われないよう、確認した事実と決定を `~/.claude/contexts/<repo>/<key>/CONTEXT.md` に残し、`SessionStart` フックが (compact 後も含めて) 自動的に読み戻す。`/prepare-context <調査 | 設計 | 実装 | pr>`。
 → [prepare-context/README.md](prepare-context/README.md)

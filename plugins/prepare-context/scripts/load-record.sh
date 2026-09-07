@@ -30,7 +30,7 @@ cat "$RECORD"
 lines=$(wc -l < "$RECORD")
 bytes=$(wc -c < "$RECORD")
 if [ "$lines" -gt "$MAX_LINES" ] || [ "$bytes" -gt "$MAX_BYTES" ]; then
-  printf '\n---\nprepare-context: 記録が上限を超えています (%s行 / %sbytes、上限 %s行 / %sbytes)。次に `/prepare-context` を実行する際、撤回された決定と詳細な根拠を CONTEXT.archive.md へ移せるか見直してください。**要約による圧縮はしないこと。**選択肢は「archive へ移す」か「そのまま残す」の2つだけです。\n' \
+  printf '\n---\nprepare-context: 記録が上限を超えています (%s行 / %sbytes、上限 %s行 / %sbytes)。次に `/prepare-context` を実行する際、撤回・置き換えられた決定を CONTEXT.archive.md へ移せるか見直してください。**現役の根拠は移さないこと** (archive は注入されないため、移すと失われたのと同じになります)。**要約による圧縮もしないこと。**\n' \
     "$lines" "$bytes" "$MAX_LINES" "$MAX_BYTES"
 fi
 
