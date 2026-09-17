@@ -5,8 +5,9 @@
 # Claude に渡らない既知の不具合があり修正予定もない (anthropics/claude-code#16538)。
 set -uo pipefail
 
-MAX_LINES=400
-MAX_BYTES=24576
+# 分量の上限ではなく、記録がログへ変質したことを知らせる警報の水準。
+# 実運用の記録の実測 (中央値 19KB / 最大 61KB) の上に余裕を取っている。
+MAX_BYTES=65536
 
 INPUT=$(cat)
 SOURCE=$(printf '%s' "$INPUT" | jq -r '.source // empty' 2>/dev/null) || SOURCE=""
@@ -27,11 +28,10 @@ fi
 printf '<!-- prepare-context: %s を自動読み込み。このタスクで確定済みの事実と決定です -->\n\n' "$RECORD"
 cat "$RECORD"
 
-lines=$(wc -l < "$RECORD")
 bytes=$(wc -c < "$RECORD")
-if [ "$lines" -gt "$MAX_LINES" ] || [ "$bytes" -gt "$MAX_BYTES" ]; then
-  printf '\n---\nprepare-context: 記録が上限を超えています (%s行 / %sbytes、上限 %s行 / %sbytes)。次に `/prepare-context` を実行する際、撤回・置き換えられた決定を CONTEXT.archive.md へ移せるか見直してください。**現役の根拠は移さないこと** (archive は注入されないため、移すと失われたのと同じになります)。**要約による圧縮もしないこと。**\n' \
-    "$lines" "$bytes" "$MAX_LINES" "$MAX_BYTES"
+if [ "$bytes" -gt "$MAX_BYTES" ]; then
+  printf '\n---\nprepare-context: 記録が警報水準を超えています (%s bytes / 水準 %s bytes)。これは分量の上限ではなく、記録が決定記録からログへ変質した可能性を知らせる合図です。次に `/prepare-context` を実行する際、以下だけ点検してください。\n\n- 決着した調査の「現在地」が残っていないか → 結論を事実として残し、現在地は CONTEXT.archive.md へ\n- 撤回・置き換えられた決定が残っていないか → CONTEXT.archive.md へ\n- 探索の経路・ツール出力の生ログが混ざっていないか → そもそも残さないものなので取り除く\n\n**該当が無ければそのままでよい。**現役の根拠は移さず、要約による圧縮もしない (archive は注入されないため、移した時点で後続には失われたのと同じになります)。判断がつかないものは残す側に倒す。\n' \
+    "$bytes" "$MAX_BYTES"
 fi
 
 if [ "$SOURCE" = "compact" ]; then
