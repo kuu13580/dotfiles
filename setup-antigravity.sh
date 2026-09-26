@@ -42,4 +42,13 @@ else
     link_config "$DOTFILES_DIR/antigravity/hooks.json" "$GEMINI_CONFIG_DIR/hooks.json"
 fi
 
+# 各スキルを ~/.gemini/config/skills/ へ直接リンク (UI・エージェント検出を確実にする)
+mkdir -p "$GEMINI_CONFIG_DIR/skills"
+for skill_dir in "$DOTFILES_DIR"/plugins/*/skills/*; do
+    if [ -d "$skill_dir" ] && [ -f "$skill_dir/SKILL.md" ]; then
+        skill_name="$(basename "$skill_dir")"
+        link_config "$skill_dir" "$GEMINI_CONFIG_DIR/skills/$skill_name"
+    fi
+done
+
 echo "🎉 Antigravity 設定のリンクが完了しました"
