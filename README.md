@@ -117,3 +117,5 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 | `extensions.json`    | VSCode推奨拡張機能                                   |
 | `setup-git.sh`       | Git共通設定スクリプト (user設定除く)                 |
 | `install.sh`         | セットアップスクリプト                               |
+| `setup-antigravity.sh` | Antigravity設定シンボリックリンク作成スクリプト    |
+| `antigravity/`       | Antigravity (Gemini) 設定・アダプタ                 |

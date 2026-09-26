@@ -1,0 +1,10 @@
+{
+  "entries": [
+    { "path": "~/dotfiles/plugins/web-search/skills" },
+    { "path": "~/dotfiles/plugins/check-review-validity/skills" },
+    { "path": "~/dotfiles/plugins/explain-change/skills" },
+    { "path": "~/dotfiles/plugins/pr-bot-watcher/skills" },
+    { "path": "~/dotfiles/plugins/prepare-context/skills" },
+    { "path": "~/dotfiles/plugins/wt-manager/skills" }
+  ]
+}

@@ -146,6 +146,11 @@ fi
 # Git設定の適用
 source "$DOTFILES_DIR/setup-git.sh"
 
+# Antigravity設定の適用
+if [ -f "$DOTFILES_DIR/setup-antigravity.sh" ]; then
+    bash "$DOTFILES_DIR/setup-antigravity.sh"
+fi
+
 # devcontainer 内で wt (git worktree) を使えるようにする
 # wt new は worktree を repo の兄弟 (/workspaces/*) に作るが、共有 devcontainer では
 # /workspaces が root 所有で書けず "Permission denied" になる。共有 devcontainer.json は
