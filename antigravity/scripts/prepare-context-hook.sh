@@ -4,9 +4,9 @@ set -uo pipefail
 
 INPUT=$(cat)
 
-# 初回インボケーション (invocationNum == 1) のみ実行する
-INVOCATION_NUM=$(printf '%s' "$INPUT" | jq -r '.invocationNum // 1' 2>/dev/null)
-if [ "$INVOCATION_NUM" != "1" ]; then
+# 初回インボケーション (invocationNum == 0 または 1) のみ実行する
+INVOCATION_NUM=$(printf '%s' "$INPUT" | jq -r '.invocationNum // 0' 2>/dev/null)
+if [ "$INVOCATION_NUM" != "0" ] && [ "$INVOCATION_NUM" != "1" ]; then
   echo "{}"
   exit 0
 fi
@@ -17,7 +17,9 @@ if [ -n "$WORKSPACE" ] && [ -d "$WORKSPACE" ]; then
   cd "$WORKSPACE" 2>/dev/null || true
 fi
 
-PLUGIN_ROOT="$HOME/dotfiles/plugins/prepare-context"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PLUGIN_ROOT="$DOTFILES_DIR/plugins/prepare-context"
 if [ ! -d "$PLUGIN_ROOT" ]; then
   echo "{}"
   exit 0

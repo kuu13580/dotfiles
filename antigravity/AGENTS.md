@@ -22,7 +22,7 @@
 - `CronList` / `CronDelete` → `manage_task` ツール (引数: `Action="list"` または `Action="kill"`)
 
 ### 環境変数 `${CLAUDE_PLUGIN_ROOT}` のパス解決
-スキル内のスクリプト実行コマンドに含まれる `${CLAUDE_PLUGIN_ROOT}` は、該当プラグインのルートディレクトリパス（`~/dotfiles/plugins/<プラグイン名>`）として展開して実行すること。
+スキル内のスクリプト実行コマンドに含まれる `${CLAUDE_PLUGIN_ROOT}` は、該当プラグインのルートディレクトリパス（dotfiles 配下の `plugins/<プラグイン名>`、通常は `~/dotfiles/plugins/<プラグイン名>`）として展開して実行すること。
 - 例: `${CLAUDE_PLUGIN_ROOT}/skills/check-review-validity/scripts/fetch-pending-review.sh`
   → `~/dotfiles/plugins/check-review-validity/skills/check-review-validity/scripts/fetch-pending-review.sh`
 

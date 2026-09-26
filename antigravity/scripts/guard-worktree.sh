@@ -11,8 +11,8 @@ if [ -z "$CMD" ]; then
 fi
 
 # git worktree add または git worktree remove (rm) を検出
-# (コマンド先頭またはチェーン直後のみ。他コマンドの引数内文字列は除外)
-if echo "$CMD" | grep -E '(^|[;&|])\s*git\s+worktree\s+(add|remove|rm)\b' >/dev/null 2>&1; then
+# (git と worktree の間の -C 等のオプションも許容、引数内文字列は除外)
+if echo "$CMD" | grep -E '(^|[;&|])\s*git(\s+[^;&|]+)?\s+worktree\s+(add|remove|rm)\b' >/dev/null 2>&1; then
   REASON="git worktree の直接操作 (add/remove) は禁止されています。worktree の新規作成には 'wt new'、削除には 'wt rm' を使用してください。"
   jq -n --arg reason "$REASON" '{
     "decision": "deny",
