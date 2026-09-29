@@ -19,6 +19,13 @@ KEY=$("${CLAUDE_PLUGIN_ROOT}/scripts/resolve-key.sh") || exit 0
 DIR="$HOME/.claude/contexts/$KEY"
 RECORD="$DIR/CONTEXT.md"
 
+# set-key.sh 導入前 (v0.3.x 以前) に設定したキーは紐付けが無く、複製と区別できないため無視される
+legacy_key=$(git config prepare-context.key 2>/dev/null) || legacy_key=""
+if [ -n "$legacy_key" ] && [ -z "$(git config prepare-context.keyOwner 2>/dev/null)" ]; then
+  printf 'prepare-context: 明示キー `%s` は worktree との紐付けが無いため無視し、`%s` で解決しました。この worktree のキーなら `%s/scripts/set-key.sh %s` を、別 worktree から複製されたものなら `git config --worktree --unset prepare-context.key` を実行してください。\n\n' \
+    "$legacy_key" "$KEY" "$CLAUDE_PLUGIN_ROOT" "$legacy_key"
+fi
+
 if [ ! -f "$RECORD" ]; then
   printf 'prepare-context: `%s` の引き継ぎ記録はまだありません。設計が固まった時点で `/prepare-context 設計` を実行し、%s に書き出してください。\n' \
     "$KEY" "$RECORD"
