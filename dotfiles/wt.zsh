@@ -310,6 +310,9 @@ function _wt_new() {
     git -C "$target_path" config --worktree wt.description "$desc"
     echo "wt new: description recorded"
   else
+    # git worktree add は実行元の config.worktree を複製するため、親の description を引き継がせない
+    git config --file "$(git -C "$target_path" rev-parse --path-format=absolute --git-path config.worktree)" \
+      --unset wt.description 2>/dev/null
     echo "wt new: warning - description (-d) not provided. Run 'wt set' to add one." >&2
   fi
   echo "wt new: created $target_path"

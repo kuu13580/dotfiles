@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-09-29
+
+### Fixed
+
+- **`wt new` を `-d` なしで実行すると実行元 worktree の `wt.description` を引き継いでいた問題**: `git worktree add` は `extensions.worktreeConfig` 有効時に実行元の `config.worktree` を新 worktree へ複製するため、「description 未設定」の warning が出るのに実際は親の description が付いていた。`-d` なしのときは新 worktree の `wt.description` を消す (他の worktree 設定は触らない)
+
 ## [1.10.0] - 2026-07-31
 
 ### Added

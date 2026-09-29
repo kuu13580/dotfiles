@@ -14,7 +14,7 @@
 GitHub PR の bot レビューコメント (Copilot / Claude / Gemini 等) を3分間隔で監視し、検出時点で cron を自己削除して修正要否を提案するワンショット型ウォッチャー。`/pr-bot-watcher [<PR番号> | stop]`。
 → [pr-bot-watcher/README.md](pr-bot-watcher/README.md)
 
-### wt-manager (v1.9.1)
+### wt-manager (v1.10.1)
 
 git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktree の用途を git config に記録する。Claude には `git worktree add` の直叩きを避け `wt new` 経由での作成を促す。
 → [wt-manager/README.md](wt-manager/README.md)

@@ -392,6 +392,21 @@ test_new_happy_path() {
   _assert_contains "$out" "already exists" "duplicate target rejected"
 }
 
+test_new_no_inherit_description() {
+  echo "[wt new does not inherit parent's wt.description]"
+  local repo="$TMP/repo-inherit"
+  _mkrepo "$repo"
+  git -C "$repo" config extensions.worktreeConfig true
+  git -C "$repo" config --worktree wt.description "parent task"
+  git -C "$repo" config --worktree other.key "kept"
+
+  (cd "$repo" && wt new -b feature/inherit inherit-target >/dev/null 2>&1)
+  local desc; desc="$(git -C "$TMP/inherit-target" config --worktree wt.description 2>/dev/null)"
+  _assert_eq "$desc" "" "-d なし → 親の description を引き継がない"
+  _assert_eq "$(git -C "$TMP/inherit-target" config --worktree other.key 2>/dev/null)" "kept" "他の worktree 設定は触らない"
+  _assert_eq "$(git -C "$repo" config --worktree wt.description)" "parent task" "親の description は残る"
+}
+
 test_postnew_hook() {
   echo "[wt new postNew hook (git config wt.postNew)]"
   local repo="$TMP/repo-postnew"
@@ -472,6 +487,7 @@ test_set_noninteractive
 test_rm_noninteractive
 test_rm_force
 test_new_happy_path
+test_new_no_inherit_description
 test_postnew_hook
 test_trim
 test_dir_candidates
