@@ -1,0 +1,6 @@
+{
+  "name": "remove-ai-tone",
+  "description": "AIのトーンを削除し、より自然な言葉遣いに変換する",
+  "version": "1.0.0",
+  "author": { "name": "m-tojo" }
+}
