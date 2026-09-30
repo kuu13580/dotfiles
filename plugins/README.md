@@ -14,7 +14,7 @@
 GitHub PR の bot レビューコメント (Copilot / Claude / Gemini 等) を3分間隔で監視し、検出時点で cron を自己削除して修正要否を提案するワンショット型ウォッチャー。`/pr-bot-watcher [<PR番号> | stop]`。
 → [pr-bot-watcher/README.md](pr-bot-watcher/README.md)
 
-### wt-manager (v1.9.1)
+### wt-manager (v1.10.1)
 
 git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktree の用途を git config に記録する。Claude には `git worktree add` の直叩きを避け `wt new` 経由での作成を促す。
 → [wt-manager/README.md](wt-manager/README.md)
@@ -34,10 +34,15 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
 → [explain-change/README.md](explain-change/README.md)
 
-### prepare-context (v0.2.0)
+### prepare-context (v0.4.0)
 
 セッションや compact を跨いでも設計判断が失われないよう、確認した事実と決定を `~/.claude/contexts/<repo>/<key>/CONTEXT.md` に残し、`SessionStart` フックが (compact 後も含めて) 自動的に読み戻す。`/prepare-context <調査 | 設計 | 実装 | pr>`。
 → [prepare-context/README.md](prepare-context/README.md)
+
+### rebase-with-context (v0.1.0)
+
+rebase のコンフリクトを、base 側で該当行を変更した PR と自分のコミット・PR の文脈を読んだ上で解消する。引用できる根拠がある箇所だけ自動で解消して完了後にサマリで報告し、根拠のない箇所は承認モードにかかわらずユーザーに確認する。`/rebase-with-context [<base>]`。
+→ [rebase-with-context/README.md](rebase-with-context/README.md)
 
 ---
 

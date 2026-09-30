@@ -26,10 +26,14 @@ is_default_branch() {
 
 # 明示キーが最優先。ブランチ名より先に見るのは、タスク途中でブランチを切っても
 # 記録が孤立しないようにするため (main で調査 → ブランチを切って実装、が普通の流れ)
-key=$(git config --worktree prepare-context.key 2>/dev/null) || key=""
-[ -n "$key" ] || key=$(git config prepare-context.key 2>/dev/null) || key=""
+# git worktree add は config.worktree を複製するため、設定した worktree の ID (set-key.sh) と
+# 一致しないキーは他 worktree からの複製とみなして無視する
+key=$(git config prepare-context.key 2>/dev/null) || key=""
+owner=$(git config prepare-context.keyOwner 2>/dev/null) || owner=""
+self=$(git rev-parse --absolute-git-dir)
+self=${self#"$(git rev-parse --path-format=absolute --git-common-dir)"}; self=${self#/}; self=${self:-.}
 
-if [ -n "$key" ]; then
+if [ -n "$key" ] && [ "$owner" = "$self" ]; then
   printf '%s/%s\n' "$repo" "$(sanitize "$key")"
   exit 0
 fi

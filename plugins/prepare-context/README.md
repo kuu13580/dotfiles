@@ -62,11 +62,13 @@ v0.1.0 は3章構成をすべて表で固定していた。雛形が決定の `�
 
 `scripts/resolve-key.sh` が `<repo>/<key>` を1行で返す。
 
-1. `git config --worktree prepare-context.key <slug>` が設定されていれば `<repo>/<slug>`
+1. `scripts/set-key.sh <slug>` で設定した明示キーがあり、**設定した worktree 自身のもの**なら `<repo>/<slug>`
 2. なければ非 default branch のとき `<repo>/<branch>` (`/` と空白は `-` に畳む)
 3. default branch (`main` / `master` / `develop` / `origin/HEAD` の指す先) / detached HEAD / 非 git → `exit 1`
 
 明示キーをブランチ名より先に見るのは、**タスク途中でブランチを切っても記録が孤立しない**ようにするため。`main` で調査してからブランチを切る流れが普通で、そこでキーが変わると直前まで書いた記録を見失う。`git config --worktree` は worktree スコープなので、1 worktree = 1タスクの粒度と一致する。
+
+`set-key.sh` はキーと一緒に worktree の ID (`prepare-context.keyOwner`、main は `.`、linked は `worktrees/<id>`) を保存し、`resolve-key.sh` は ID が一致しないキーを無視する。**`git worktree add` は実行元の `config.worktree` を新 worktree へ複製する**ため、紐付けが無いと明示キーのある worktree から切った worktree がすべて同じ記録に書き込む。ID が無いキー (v0.3.x 以前の設定) も複製と区別できないので無視し、フックが `set-key.sh` での付け直しを案内する。
 
 default branch で自動解決を拒むのは、同一リポジトリの別タスクが同じキーを踏むと**他タスクの決定表に追記して過去の決定を汚染する**ため。記録が無い状態より悪い失敗なので、黙って解決しない。
 
@@ -105,6 +107,7 @@ prepare-context/
   .claude-plugin/plugin.json
   hooks/hooks.json                                SessionStart のみ
   scripts/resolve-key.sh                          キー解決 (フックとスキルの両方から呼ぶ)
+  scripts/set-key.sh                              明示キーを worktree に紐付けて設定
   scripts/load-record.sh                          SessionStart 本体
   skills/prepare-context/SKILL.md                 判断基準と入口
 ```

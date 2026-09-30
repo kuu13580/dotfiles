@@ -34,6 +34,7 @@ description: セッションやcompactを跨いでも設計判断が失われな
 
 - キーの優先順位は **`git config --worktree prepare-context.key`（明示）→ ブランチ名**。明示キーを先に見るのは、タスク途中でブランチを切っても記録が孤立しないようにするため
 - default branch (`main` / `master` / `develop`) で明示キーも未設定なら `exit 1`。**その場合はキーを何にするかユーザーに尋ねて設定してから書き出す**
+- 明示キーは **`${CLAUDE_PLUGIN_ROOT}/scripts/set-key.sh <key>` で設定する** (`git config` を直接叩かない)。キーを worktree と紐付けて保存し、`git worktree add` で他 worktree に複製されたキーを無視させるため
 - `~/.claude/tasks/` は Claude Code 自身が使用中 (セッションUUID名のディレクトリに `.lock` / `.highwatermark`) のため使わない
 - リポジトリ内には置かない。`.gitignore` と PR の diff を汚さず、個人の作業スタイルをリポジトリの規約に混ぜないため
 - マージ後など記録が不要になったら、**ユーザーの確認を得てから** ディレクトリごと削除する

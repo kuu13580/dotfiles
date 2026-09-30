@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-29
+
+### Fixed
+
+- **明示キーのある worktree から切った worktree が、同じ記録に書き込んでいた問題。**`git worktree add` は `extensions.worktreeConfig` 有効時に実行元の `config.worktree` を新 worktree へ複製するため、`prepare-context.key` も引き継がれ、ブランチ名より優先されていた
+  - `scripts/set-key.sh` を追加。キーと一緒に worktree の ID (`prepare-context.keyOwner`) を保存し、`resolve-key.sh` は ID が一致しないキーを複製として無視する。`wt new` 以外の経路 (`git worktree add` 直打ち・harness の worktree 作成) でも効くよう、worktree 作成側ではなく解決側で判定する
+
+### Changed
+
+- **ID の無い明示キー (v0.3.x 以前に `git config` で設定したもの) は無視するようにした。**複製と区別できないため。SessionStart フックが `set-key.sh` での付け直しか unset を案内する
+
 ## [0.3.0] - 2026-09-16
 
 ### Changed
