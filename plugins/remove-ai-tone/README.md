@@ -31,7 +31,7 @@ Claude Code の出力スタイルとして `Remove AI Tone` を指定する。
 ### 起動時オプションで指定する
 
 ```bash
-claude --output-style "Remove AI Tone"
+claude --settings '{"outputStyle":"Remove AI Tone"}'
 ```
 
 ## ファイル構成
