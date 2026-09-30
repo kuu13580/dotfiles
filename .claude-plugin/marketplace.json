@@ -48,6 +48,11 @@
       "name": "pr-review",
       "source": "./plugins/pr-review",
       "description": "他人のPRレビューの作法を通すスキル。個人指名の依頼抽出、不具合/規約/仕様・設計の確認事項の切り分け(規約は引用必須)、テストによる再検証、検証できたものだけのpendingコメント投稿、修正後のResolve/Approveまで。submit/Approve/返信は承認後にのみ実行"
+    },
+    {
+      "name": "remove-ai-tone",
+      "source": "./plugins/remove-ai-tone",
+      "description": "AIのトーンを削除し、より自然な言葉遣いに変換する"
     }
   ]
 }
