@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
-import { gradient, sparkGauge } from './register'
+import { circle, gradient, sparkGauge } from './register'
 
 const PROPS = { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120, scroll: { offset: 0, bodyRows: 10 }, view: {} }
 
@@ -48,8 +48,8 @@ const SWITCH = {
   pricing: 'catalog',
 } as const
 
-const mountBand = ($: Engine, surface: 'terminal' | 'desktop') =>
-  $.ui.mount({ plugin: 'sparkline-statusline', surface, component: 'AbovePrompt', props: PROPS })
+const mountBand = ($: Engine, surface: 'terminal' | 'desktop', bodyColumns = 120) =>
+  $.ui.mount({ plugin: 'sparkline-statusline', surface, component: 'AbovePrompt', props: { ...PROPS, bodyColumns } })
 
 describe('helpers', () => {
   test('sparkGauge fills by level', () => {
@@ -61,19 +61,30 @@ describe('helpers', () => {
     expect(gradient(0)).toBe('#00c850')
     expect(gradient(100)).toBe('#ff003c')
   })
+  test('circle steps at 12.5% boundaries', () => {
+    expect([0, 12, 13, 37, 38, 62, 63, 87, 88, 100].map(circle).join('')).toBe('○○◔◔◑◑◕◕●●')
+  })
 })
 
 describe('band', () => {
-  test('desktop draws ctx, rate limits and cache hit ratio without TTL', async ($, on) => {
+  test('desktop draws gauges and omits cache while TTL is unknown', async ($, on) => {
     mock.clock(on, { now: 1_000_000 })
     bottom(on)
     await feed($)
     const ui = await mountBand($, 'desktop')
-    expect(await ui.find({ text: /ctx/ })).toBeDefined()
+    expect(await ui.find({ text: '████▇   ' })).toBeDefined()
     expect(await ui.find({ text: /reset \d\d:\d\d/ })).toBeDefined()
     expect(await ui.find({ text: /7d/ })).toBeDefined()
-    expect(await ui.find({ text: /90%/ })).toBeDefined()
-    expect(await ui.find({ text: /●|○/ })).toBeUndefined()
+    expect(await ui.find({ text: /cache/ })).toBeUndefined()
+  })
+
+  test('desktop switches gauges to circles when the row does not fit', async ($, on) => {
+    mock.clock(on, { now: 1_000_000 })
+    bottom(on)
+    await feed($)
+    const ui = await mountBand($, 'desktop', 40)
+    expect(await ui.find({ text: '◑' })).toBeDefined()
+    expect(await ui.find({ text: /█/ })).toBeUndefined()
   })
 
   test('desktop shows warm expiry once TTL is known, then cold after it', async ($, on) => {
@@ -100,9 +111,10 @@ describe('band', () => {
     expect(await ui.find({ text: /●/ })).toBeUndefined()
   })
 
-  test('/clear resets the cache stats', async ($, on) => {
+  test('/clear resets the cache state', async ($, on) => {
     mock.clock(on)
     bottom(on)
+    await $.classic.PostModelSwitch(SWITCH)
     await feed($)
     await $.session.end({ reason: 'clear', sessionId: 's', resume: { id: 's' } })
     const ui = await mountBand($, 'desktop')

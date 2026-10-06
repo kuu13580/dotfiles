@@ -7,27 +7,30 @@ Claude Codeのステータスラインにスパークラインゲージでコン
 - **ctx**: コンテキストウィンドウ使用率
 - **5h**: 5時間レートリミット使用率（リセット時刻付き）
 - **7d**: 7日間レートリミット使用率
-- **cache**: prompt cache の状態 (● warm / ○ cold)、cold になる時刻、hit ratio。miss があれば回数と直近の原因
+- **cache**: prompt cache の状態 (● warm / ○ cold) と cold になる時刻
 
 ### 出力例
 
 ```plain
-Claude Opus 4.6 │ ctx ████▇    62% │ 5h █▁       15% (reset 18:30) │ 7d ▁        3% │ cache ● ~14:32 91% ✗2 tools_changed
+Claude Opus 4.6 │ ctx ████▇    62% │ 5h █▁       15% (reset 18:30) │ 7d ▁        3% │ cache ● ~14:32
+```
+
+1 行が幅に収まらない場合は、ゲージを円 1 文字に切り替えます。
+
+```plain
+Claude Opus 4.6 │ ctx ◑ 62% │ 5h ◔ 15% (reset 18:30) │ 7d ○ 3% │ cache ● ~14:32
 ```
 
 ## Desktop app (mod)
 
 同梱の mod (`hooks/register.tsx`) が Desktop app の Code tab でプロンプト上の band に同じ形式で表示します (モデル名は除く)。terminal では描画せず statusline に任せます。
 
-mod は statusline の `prompt_cache` を受け取れないため、cache は表示できる範囲に限ります。
-
-- hit ratio: メインスレッドのターンの usage から計算 (プロセス起動・`/clear`・resume で 0 から)
-- ● / ○ と時刻: model 切り替え時に TTL を取得できた場合のみ (切り替え直後は次の応答まで ○)
-- miss 回数・原因: 表示しない
+mod は statusline の `prompt_cache` を受け取れないため、cache は model 切り替え時に TTL を取得できた場合のみ表示します (切り替え直後は次の応答まで ○)。
 
 ## 表示仕様 (statusline.py と register.tsx で揃える)
 
 - ゲージ: 8 文字、` ▁▂▃▄▅▆▇█` の 9 段階
+- 幅不足時: `○◔◑◕●` の 1 文字 (12.5% 刻みで切り替え)。CLI は `COLUMNS - 4`、Desktop は band の `bodyColumns` と比較
 - 色: 50% 未満は `rgb(pct*5.1, 200, 80)`、50% 以上は `rgb(255, 200-(pct-50)*4, 60)`
 - 区切り ` │ `、ラベル・補足は dim、時刻は `HH:MM` (ローカル)
 
