@@ -1,0 +1,47 @@
+{
+  "env": {
+    "CLAUDE_CODE_NO_FLICKER": "1",
+    "FORCE_HYPERLINK": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git show:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(gh pr:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(jq:*)",
+      "Bash(mkdir:*)",
+      "Bash(stat:*)",
+      "Bash(date:*)",
+      "WebSearch"
+    ]
+  },
+  "model": "opus[1m]",
+  "language": "日本語",
+  "worktree": {
+    "bgIsolation": "none"
+  },
+  "extraKnownMarketplaces": {
+    "kuu13580-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "kuu13580/dotfiles"
+      },
+      "autoUpdate": true
+    }
+  },
+  "autoMemoryEnabled": false,
+  "remoteControlAtStartup": true,
+  "inputNeededNotifEnabled": true,
+  "useAutoModeDuringPlan": true,
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  }
+}
