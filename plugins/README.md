@@ -4,7 +4,7 @@
 
 ## プラグイン一覧
 
-### sparkline-statusline (v1.3.0)
+### sparkline-statusline (v1.3.1)
 
 スパークラインゲージでコンテキスト使用率・レートリミット (5h / 7d)・prompt cache を Claude Code のステータスラインに表示する。Desktop app では同梱の mod がプロンプト上の band に同じ形式で表示する。PR 番号は Claude Code 標準の footer PR バッジが担当 (clickable にならない端末は `FORCE_HYPERLINK=1 claude` で起動)。
 → [sparkline-statusline/README.md](sparkline-statusline/README.md)

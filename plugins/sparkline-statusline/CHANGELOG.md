@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-10-06
+
+### Added
+
+- 1 行が幅に収まらない場合、ctx / 5h / 7d のゲージを円 1 文字 (`○◔◑◕●`) に切り替える (CLI は `COLUMNS`、Desktop は `bodyColumns` で判定)
+
+### Changed
+
+- cache 表示を warm/cold と cold になる時刻だけに絞り、hit ratio と miss 回数・原因を削除
+- Desktop の cache 表示は TTL が分かるまで出さない (hit ratio 削除に伴い、常時表示する項目がなくなったため)
+
+### Fixed
+
+- `rate_limits` などが `null` で渡されたときに statusline.py が落ちる問題
+
 ## [1.3.0] - 2026-10-06
 
 ### Added
