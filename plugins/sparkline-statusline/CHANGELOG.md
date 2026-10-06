@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2026-10-06
+
+### Fixed
+
+- プラグイン更新前から動いているセッションの hook が `statusLine.command` を古いバージョンのパスへ戻し、新旧の statusline が交互に表示される問題を修正。settings.json の方が新しいバージョンを指していれば書き換えない (この判定がない 1.3.1 以前のセッションは `/reload-plugins` か再起動が必要)
+- jq がない環境 (Windows の Desktop app など) では setup-statusline.sh を何もせず終了する
+
 ## [1.3.1] - 2026-10-06
 
 ### Added
