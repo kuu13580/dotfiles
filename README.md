@@ -119,3 +119,5 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 | `install.sh`         | セットアップスクリプト                               |
 | `setup-antigravity.sh` | Antigravity設定シンボリックリンク作成スクリプト    |
 | `antigravity/`       | Antigravity (Gemini) 設定・アダプタ                 |
+| `setup-claude.sh`    | `claude/settings.base.json` を `~/.claude/settings.json` にマージ |
+| `claude/`            | Claude Code ユーザー設定のベース                    |

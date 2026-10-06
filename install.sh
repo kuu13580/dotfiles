@@ -151,6 +151,9 @@ if [ -f "$DOTFILES_DIR/setup-antigravity.sh" ]; then
     bash "$DOTFILES_DIR/setup-antigravity.sh"
 fi
 
+# Claude Code設定の適用 (jq は上の apt install で導入済み)
+bash "$DOTFILES_DIR/setup-claude.sh"
+
 # devcontainer 内で wt (git worktree) を使えるようにする
 # wt new は worktree を repo の兄弟 (/workspaces/*) に作るが、共有 devcontainer では
 # /workspaces が root 所有で書けず "Permission denied" になる。共有 devcontainer.json は
