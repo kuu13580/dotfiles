@@ -7,7 +7,7 @@
     {
       "name": "sparkline-statusline",
       "source": "./plugins/sparkline-statusline",
-      "description": "スパークラインゲージでコンテキスト使用率・レートリミットを表示するステータスライン"
+      "description": "スパークラインゲージでコンテキスト使用率・レートリミット・prompt cache を表示するステータスライン"
     },
     {
       "name": "pr-bot-watcher",
