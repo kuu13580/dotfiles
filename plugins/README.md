@@ -44,10 +44,15 @@ PR / commit / ブランチ / 現 worktree の変更を調査し、その領域�
 rebase のコンフリクトを、base 側で該当行を変更した PR と自分のコミット・PR の文脈を読んだ上で解消する。引用できる根拠がある箇所だけ自動で解消して完了後にサマリで報告し、根拠のない箇所は承認モードにかかわらずユーザーに確認する。`/rebase-with-context [<base>]`。
 → [rebase-with-context/README.md](rebase-with-context/README.md)
 
-### pr-review (v0.4.2)
+### pr-review (v0.5.0)
 
 他人の PR をレビューする作法を通すスキル。個人指名の依頼抽出 → 不具合 / 規約 / 仕様・設計の確認事項に切り分け (規約は引用必須) → テストによる再検証 → 検証できたものだけ pending 投稿 → 修正確認 → Resolve / Approve。submit は行わず、Approve / 返信 / Resolve は承認後にのみ実行する。`/pr-review [<PR番号> | <PR URL>] [--review | --verify] [--explain]`。
 → [pr-review/README.md](pr-review/README.md)
+
+### code-peek (v0.1.0)
+
+返答中の `path:line` をクリックすると、そのファイルを pane に開いて該当行までスクロールする mod (fullscreen 表示の端末のみ)。ファイル名だけの参照も `git ls-files` から解決する。クリックできない環境では `/peek <path>:<line>`。
+→ [code-peek/README.md](code-peek/README.md)
 
 ### remove-ai-tone (v1.0.0)
 

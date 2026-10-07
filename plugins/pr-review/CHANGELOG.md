@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-07
+
+### Changed
+
+- 仕様・設計の確認事項に重要度 (critical / major / minor) を付け、critical / major (最大 10 件) を `【確認・要判断/<重要度>】` の目印付きで pending に置くように変更。minor (最大 5 件) はターミナルに 1 行で出す。判断は GitHub 上でコードと並べて行い、不要なら削除、送るなら目印を外す。diff 外の行を指すものはターミナルに詳細を出す
+- 確認事項を「実装: X のとき Y する / 判断: Yes/No の問い」の形で書く。場所はリポジトリ相対の `path:line`
+- フェーズB で【確認】のスレッドを返信で判定する (💬 回答あり / ⏳ 未回答)。返信だけで閉じた問いを ❌ 未対応にしていた
+- フェーズA の報告を、判断が要る箇所の目次に変更。投稿済みの指摘と落とした指摘は件数のみ (求められたら表で出す)、見出しと絵文字で区別する
+
 ## [0.4.2] - 2026-09-30
 
 ### Fixed
