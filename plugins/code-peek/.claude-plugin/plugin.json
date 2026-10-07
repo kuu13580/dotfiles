@@ -1,0 +1,7 @@
+{
+  "name": "code-peek",
+  "description": "返答中の path:line をクリックすると、そのファイルを pane に開いて該当行までスクロールする mod",
+  "version": "0.1.0",
+  "author": { "name": "m-tojo" },
+  "types": "./types/index.d.ts"
+}
