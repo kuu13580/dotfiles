@@ -1,3 +1,4 @@
+// `line` 0 means the whole file, opened from the top with no line marked.
 export type Ref = { path: string; line: number; endLine?: number }
 
 // `file` is what $.fs reads, `display` the repo-relative path shown in the pane.
@@ -13,6 +14,7 @@ export type Pos = { center: number } | { top: number }
 
 declare module 'claude-code' {
   interface PluginState {
-    'code-peek': { view: View | null; pos: Pos }
+    // `recent` holds the refs of the latest replies, newest first.
+    'code-peek': { view: View | null; pos: Pos; recent: Ref[][] }
   }
 }

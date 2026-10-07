@@ -6,14 +6,28 @@ import type { Candidate, Pos, Ref, View } from '../types'
 const PANE = 'code-peek'
 const HEADER_ROWS = 1
 const MAX_CANDIDATES = 20
+const RECENT_TURNS = 3
+const RECENT_REFS = 20
 const view = atom({ plugin: 'code-peek', key: 'view' } as const, null as View | null)
 const pos = atom({ plugin: 'code-peek', key: 'pos' } as const, { top: 0 } as Pos)
+const recent = atom({ plugin: 'code-peek', key: 'recent' } as const, [] as Ref[][])
 
 // `path:10-20` or GitHub's `path#L10-L20`
 const REF_SOURCE = String.raw`(\/?(?:[\w.@~-]+\/)*[\w.@-]*\.[A-Za-z]\w{0,9})(?::(\d+)(?:-(\d+))?|#L(\d+)(?:-L(\d+))?)`
 const REF = new RegExp(`^${REF_SOURCE}$`)
+// Without a line, a path needs a directory, or a file name needs a listed extension:
+// `JSON.parse` and `console.log` read like file names, so the extension is what tells them apart.
+const PATH_SOURCE = String.raw`\/?(?:[\w.@~-]+\/)+[\w.@-]*\.[A-Za-z]\w{0,9}`
+const FILE_EXTS = 'ts|tsx|js|jsx|mjs|cjs|json|md|yml|yaml|toml|py|sh|css|scss|html|vue|go|rs|java|kt|rb|php|sql'
+const FILE_SOURCE = String.raw`[\w@-][\w.@-]*\.(?:${FILE_EXTS})(?!\w|\.\w)`
+const PATH_ONLY = new RegExp(`^(?:${PATH_SOURCE}|${FILE_SOURCE})$`)
 // Markdown links, URLs and inline code are matched first so a ref inside them is left alone.
-const TOKEN = new RegExp(String.raw`(\[[^\]\n]*\]\([^)\n]*\))|(https?:\/\/\S+)|(\x60[^\x60\n]+\x60)|` + REF_SOURCE, 'g')
+// A ref may only start at a token boundary, so a long token without one is not rescanned from every character.
+const TOKEN = new RegExp(
+  String.raw`(\[[^\]\n]*\]\([^)\n]*\))|(https?:\/\/\S+)|(\x60[^\x60\n]+\x60)|` +
+    String.raw`(?<![\w.@~/-])(?:${REF_SOURCE}|${PATH_SOURCE}|${FILE_SOURCE})`,
+  'g',
+)
 
 const refOf = (m: RegExpExecArray): Ref => {
   const line = Number(m[2] ?? m[4])
@@ -21,38 +35,49 @@ const refOf = (m: RegExpExecArray): Ref => {
   return { path: m[1]!, line, ...(endLine > line ? { endLine } : {}) }
 }
 
-const toHref = (ref: Ref) => `file:${ref.path}#L${ref.line}${ref.endLine ? `-L${ref.endLine}` : ''}`
-
-export const parseHref = (href: string): Ref | undefined => {
-  const m = /^file:(.+?)#L(\d+)(?:-L(\d+))?$/.exec(href)
-  if (!m) return undefined
-  const line = Number(m[2])
-  const endLine = m[3] ? Number(m[3]) : undefined
-  return { path: m[1]!, line, ...(endLine && endLine > line ? { endLine } : {}) }
+const refFrom = (s: string): Ref | undefined => {
+  const m = REF.exec(s)
+  return m ? refOf(m) : PATH_ONLY.test(s) ? { path: s, line: 0 } : undefined
 }
 
-type Linked = { text: string; hrefs: string[] }
+const toHref = (ref: Ref) =>
+  `file:${ref.path}${ref.line ? `#L${ref.line}` : ''}${ref.endLine ? `-L${ref.endLine}` : ''}`
+
+export const parseHref = (href: string): Ref | undefined => {
+  const m = /^file:(.+?)(?:#L(\d+)(?:-L(\d+))?)?$/.exec(href)
+  if (!m) return undefined
+  // A pressed link comes back as the surface resolved it (`file:///abs/path`, percent-encoded), not as written.
+  let path = m[1]!.replace(/^\/\/[^/]*/, '')
+  try {
+    path = decodeURIComponent(path)
+  } catch {}
+  const line = Number(m[2] ?? 0)
+  const endLine = m[3] ? Number(m[3]) : undefined
+  return { path, line, ...(endLine && endLine > line ? { endLine } : {}) }
+}
+
+type Linked = { text: string; hrefs: string[]; refs: Ref[] }
 // Every redraw of the transcript re-renders each message, while a finished message's text never changes.
 const linked = new Map<string, Linked>()
 
 export const linkify = (text: string): Linked => {
   const hit = linked.get(text)
   if (hit) return hit
-  const hrefs = new Set<string>()
+  const refs = new Map<string, Ref>()
   const linkifySegment = (segment: string) =>
     segment.replace(TOKEN, (whole: string, mdLink?: string, url?: string, code?: string) => {
       if (mdLink || url) return whole
-      const m = REF.exec(code ? code.slice(1, -1) : whole)
-      if (!m) return whole
-      const href = toHref(refOf(m))
-      hrefs.add(href)
+      const ref = refFrom(code ? code.slice(1, -1) : whole)
+      if (!ref) return whole
+      const href = toHref(ref)
+      refs.set(href, ref)
       return `[${whole}](${href})`
     })
   const out = text
     .split(/(^```[\s\S]*?^```)/m)
     .map((part, i) => (i % 2 === 1 ? part : linkifySegment(part)))
     .join('')
-  const result = { text: out, hrefs: [...hrefs] }
+  const result = { text: out, hrefs: [...refs.keys()], refs: [...refs.values()] }
   if (linked.size >= 200) linked.delete(linked.keys().next().value!)
   linked.set(text, result)
   return result
@@ -89,11 +114,19 @@ const countLines = async ($: EngineInterface, path: string) => {
   }
 }
 
+// The session's directory never changes, so neither does its repository root.
+let repoRoot: Promise<string | undefined> | undefined
+
+const rootOf = ($: EngineInterface) => (repoRoot ??= git($, ['rev-parse', '--show-toplevel']).then(s => s?.trim()))
+
+const under = (dir: string | undefined, path: string) => (dir && path.startsWith(`${dir}/`) ? path.slice(dir.length + 1) : path)
+
 const resolve = async ($: EngineInterface, ref: Ref): Promise<Candidate[]> => {
-  if (await $.fs.exists(ref.path)) return [{ file: ref.path, display: ref.path }]
-  const top = (await git($, ['rev-parse', '--show-toplevel']))?.trim()
+  const [top, exists] = await Promise.all([rootOf($), $.fs.exists(ref.path)])
+  if (exists) return [{ file: ref.path, display: under(top, ref.path) }]
   if (!top) return []
-  const want = ref.path.replace(/^\.?\//, '')
+  // A pressed link comes back resolved against the session directory (`/cwd/api.ts`), so search by what was written.
+  const want = under(await $.session.cwd(), ref.path).replace(/^\.?\//, '')
   // A pathspec keeps the output small; listing every file overflows the 4 MiB stdout cap in large repos.
   const listed = await git($, ['ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', want, `:(glob)**/${want}`], top)
   const matches = [...new Set((listed ?? '').split('\0').filter(Boolean))].slice(0, MAX_CANDIDATES)
@@ -131,8 +164,26 @@ const show = async ($: EngineInterface, c: Candidate, ref: Ref) => {
     return
   }
   const endLine = Math.min(ref.endLine ?? ref.line, lines.length)
-  await update($, pos, (): Pos => ({ center: Math.floor((ref.line + endLine) / 2) }))
+  await update($, pos, (): Pos => (ref.line ? { center: Math.floor((ref.line + endLine) / 2) } : { top: 0 }))
   await setView($, { kind: 'code', ...c, line: ref.line, endLine, total: lines.length })
+}
+
+const refKey = (r: Ref) => (r.line ? `${r.path}:${r.line}${r.endLine ? `-${r.endLine}` : ''}` : r.path)
+
+// Newest reply first; a ref already listed under a newer reply is dropped from the older ones.
+export const addRecent = (groups: Ref[][], refs: Ref[]): Ref[][] => {
+  const seen = new Set<string>()
+  let room = RECENT_REFS
+  return [refs, ...groups].slice(0, RECENT_TURNS).flatMap(g => {
+    const kept = g
+      .filter(r => {
+        const key = refKey(r)
+        return !seen.has(key) && !!seen.add(key)
+      })
+      .slice(0, room)
+    room -= kept.length
+    return kept.length > 0 ? [kept] : []
+  })
 }
 
 export const topOf = (p: Pos, total: number, rows: number) => {
@@ -145,24 +196,39 @@ export const peek = async ($: EngineInterface, ref: Ref) => {
   if (found.length === 1) await show($, found[0]!, ref)
   else if (found.length === 0) await setView($, { kind: 'error', message: `${ref.path} に一致するファイルが見つかりません` })
   else await setView($, { kind: 'choose', ref, candidates: found })
-  await $.ui.open({ id: PANE, title: `${ref.path}:${ref.line}` })
+  await $.ui.open({ id: PANE, title: refKey(found.length === 1 ? { ...ref, path: found[0]!.display } : ref) })
 }
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'peek',
-      description: 'path:line のファイルを pane に表示し、その行までスクロールする',
-      argumentHint: '<path>:<line>[-<end>] | <path>#L<line>[-L<end>]',
+      description: '直近の返答の参照一覧、または path:line のファイルを pane に表示する',
+      argumentHint: '[<path>:<line>[-<end>] | <path>#L<line>[-L<end>]]',
     })
     return next(e)
   })
 
   on('command.run', { command: 'peek' }, async ($, e) => {
-    const m = REF.exec(e.args.trim().replace(/^\x60|\x60$/g, ''))
-    if (!m) return { text: `使い方: /peek <path>:<line>[-<end>] または <path>#L<line>[-L<end>]` }
-    await peek($, refOf(m))
+    const arg = e.args.trim().replace(/^\x60|\x60$/g, '')
+    if (arg === '') {
+      await update($, view, () => null)
+      await $.ui.open({ id: PANE, title: 'code-peek' })
+      return {}
+    }
+    const ref = refFrom(arg)
+    if (!ref) return { text: `使い方: /peek (直近の参照一覧) | /peek <path>[:<line>[-<end>]] | /peek <path>#L<line>[-L<end>]` }
+    await peek($, ref)
     return {}
+  })
+
+  on('turn.complete', async ($, e, next) => {
+    const result = await next(e)
+    if (e.agentId === undefined && e.reason === 'answer') {
+      const { refs } = linkify(e.answer)
+      if (refs.length > 0) await update($, recent, groups => addRecent(groups, refs))
+    }
+    return result
   })
 
   // Clicks only reach plugins in the fullscreen terminal; elsewhere the engine's own rendering is kept.
@@ -197,17 +263,45 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Code, Button } = $.ui.resolve(e)
     const v = await read($, view)
-    if (!v) return <Text dimColor>path:line をクリックすると、ここに前後の行を表示します</Text>
-    if (v.kind === 'error') return <Text color="red">{v.message}</Text>
-    if (v.kind === 'choose') {
+    if (!v) {
+      const groups = await read($, recent)
+      if (groups.length === 0) return <Text dimColor>直近の返答に path:line の参照はまだありません</Text>
       return (
         <Box flexDirection="column">
-          <Text>{`${v.ref.path}:${v.ref.line} に一致するファイルが複数あります`}</Text>
-          {v.candidates.map((c, i) => (
-            <Button key={`pick-${i}`} plain onPress={() => void show($, c, v.ref)}>
-              {c.display}
-            </Button>
+          {groups.map((g, gi) => (
+            <Box key={`group-${gi}`} flexDirection="column" marginBottom={1}>
+              <Text dimColor>{`${gi === 0 ? '直近の返答' : `${gi} つ前の返答`} (${g.length})`}</Text>
+              {g.map((r, i) => (
+                <Button key={`ref-${gi}-${i}`} plain onPress={() => void peek($, r)}>
+                  {refKey(r)}
+                </Button>
+              ))}
+            </Box>
           ))}
+        </Box>
+      )
+    }
+    const back = (
+      <Button key="back" plain onPress={() => void update($, view, () => null)}>
+        ← 一覧
+      </Button>
+    )
+    if (v.kind !== 'code') {
+      return (
+        <Box flexDirection="column">
+          {back}
+          {v.kind === 'error' ? (
+            <Text color="red">{v.message}</Text>
+          ) : (
+            <>
+              <Text>{`${refKey(v.ref)} に一致するファイルが複数あります`}</Text>
+              {v.candidates.map((c, i) => (
+                <Button key={`pick-${i}`} plain onPress={() => void show($, c, v.ref)}>
+                  {c.display}
+                </Button>
+              ))}
+            </>
+          )}
         </Box>
       )
     }
@@ -226,11 +320,14 @@ export const register: Register = on => {
     const digits = String(lines.length).length
     const gutter = (from: number, to: number, mark: string) =>
       shown.slice(from, to).map((_, i) => `${mark} ${String(top + from + i + 1).padStart(digits)}`).join('\n')
-    const at = v.endLine > v.line ? `${v.line}-${v.endLine}` : `${v.line}`
-    const header = ` ${v.display}:${at}  (${top + 1}-${top + shown.length} / ${lines.length})`
+    const at = v.endLine > v.line ? `:${v.line}-${v.endLine}` : v.line ? `:${v.line}` : ''
+    const header = ` ${v.display}${at}  (${top + 1}-${top + shown.length} / ${lines.length})`
     return (
       <Box flexDirection="column">
-        <Text inverse bold wrap="truncate-end">{header.padEnd(e.props.bodyColumns)}</Text>
+        <Box flexDirection="row">
+          {back}
+          <Text inverse bold wrap="truncate-end">{header.padEnd(e.props.bodyColumns)}</Text>
+        </Box>
         <Box flexDirection="row">
           <Box flexDirection="column" width={digits + 3} minWidth={digits + 3} flexShrink={0}>
             {lo > 0 && <Text dimColor>{gutter(0, lo, ' ')}</Text>}
