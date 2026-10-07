@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-10-07
+
+### Added
+
+- **`/open [code|zed]` コマンド (mod)**: セッションの worktree をエディタで開く。これまでは別ターミナルで `wt` を打つ必要があった。セッションの cwd から `git rev-parse --show-toplevel` で worktree ルートを求めて開き、引数なしは前回のエディタを使う。モデルを呼ばない mod にしたのは、会話履歴を汚さず応答中でも即実行するため
+
 ## [1.10.1] - 2026-09-29
 
 ### Fixed

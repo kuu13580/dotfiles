@@ -4,13 +4,14 @@ git worktree を fzf ベースの `wt` 系コマンドで管理するプラグ�
 
 ## 構成
 
-実装本体 (`wt.zsh`) は **dotfiles リポジトリ側の1ファイルのみ**を実体とし、プラグインには複製を同梱しません。プラグインが提供するのは Claude 向けの SKILL と hook だけです。
+実装本体 (`wt.zsh`) は **dotfiles リポジトリ側の1ファイルのみ**を実体とし、プラグインには複製を同梱しません。プラグインが提供するのは Claude 向けの SKILL・hook と、セッション内で使う `/open` コマンド (mod) だけです。
 
 | 役割 | パス |
 | --- | --- |
 | zsh 関数の実体 (唯一) | `~/dotfiles/dotfiles/wt.zsh` |
 | テスト | `~/dotfiles/dotfiles/wt.test.zsh` |
 | Claude 向け動線 | `skills/wt-manager/SKILL.md` |
+| `/open` コマンド (mod) | `hooks/register.tsx` (テスト: `claude plugin test plugins/wt-manager`) |
 
 > **前提**: 本プラグインは **dotfiles リポジトリが初期セットアップ済みであること** (= `wt.zsh` が `.zshrc` から source 済み) を前提とします。`wt.zsh` の複製を同梱しないため、dotfiles 未セットアップの環境では `wt` コマンドが存在せず機能しません。プラグインインストールパス(キャッシュ位置)は変動するため、`.zshrc` から source するのは dotfiles 側の固定パスです。
 
@@ -38,6 +39,14 @@ git worktree を fzf ベースの `wt` 系コマンドで管理するプラグ�
 | `wt rm [<name>...] [-y] [-b] [-f]` | worktree 削除。無引数 → fzf 複数選択 + 対話確認、`-y` で確認スキップ、`-b` でブランチも削除、`-f` で dirty な worktree も強制削除 (下記) |
 | `wt claude [<name>] [-n <label>]` | `claude --bg` で Agent View に idle 投入 (プロンプト無し)。name 指定で fzf スキップ。表示名 (`-n`) は既定で `wt.description`、無ければディレクトリ名。`-n <label>` で上書き |
 | `wt cd [<name>]` | worktree に `cd` (zsh 関数のため対話シェルでのみ機能) |
+
+### セッションからエディタで開く (`/open`)
+
+Claude Code のセッション内で `/open [code|zed]` を打つと、セッションの cwd が属する worktree のルート (`git rev-parse --show-toplevel`、git 管理外なら cwd) をエディタで開きます。
+
+- 引数なしは前回起動に成功したエディタ (初回は `code`)
+- モデルを呼ばずに実行され、応答中でもすぐ動く
+- mod (function hooks) のため terminal / Desktop の Code タブで動作。`wt claude` で起動した background セッションでも使える
 
 ### 配置自動検出 (`wt new`)
 
