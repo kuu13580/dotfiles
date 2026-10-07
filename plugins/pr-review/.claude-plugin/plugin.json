@@ -1,7 +1,7 @@
 {
   "name": "pr-review",
   "description": "他人の PR をレビューする一連の作法。指名で来たレビュー依頼の選択、不具合・規約違反・仕様設計の確認事項の切り分け、テストによる再検証、pending コメント投稿、修正確認後の Resolve / Approve までを 1 コマンドで通す。",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "author": {
     "name": "m-tojo"
   }
