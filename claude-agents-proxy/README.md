@@ -14,8 +14,8 @@ Windows Terminal で `claude agents` (Agent View) を使うと、セッション
 `.zshrc` から `claude-agents.zsh` が source され、`WT_SESSION` がある (Windows Terminal) ときの `claude agents` だけが `proxy.py` 経由になる。それ以外のコマンドや端末では素の `claude` を呼ぶ。
 
 ```sh
-proxy.py --log            # private mode の切替を ~/.cache/claude-agents-proxy.log に記録
-proxy.py --keep-alt       # alt screen 切替を止めない (記録だけ取りたい時)
+# リポジトリのルートから。private mode の切替を ~/.cache/claude-agents-proxy.log に記録
+claude-agents-proxy/proxy.py --log
 ```
 
 ## 副作用
