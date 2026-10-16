@@ -94,6 +94,10 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 
 テスト: `zsh dotfiles/wt.test.zsh`
 
+## Windows Terminal の Agent View 描画崩れ対策 (`claude-agents-proxy/`)
+
+Windows Terminal でスナップ後に Agent View の一覧へ戻ると描画が崩れる件の回避策。`.zshrc` から `claude-agents.zsh` が source され、Windows Terminal (`WT_SESSION` あり) の `claude agents` だけが PTY プロキシ経由で起動する。仕組みと副作用は [claude-agents-proxy/README.md](claude-agents-proxy/README.md) を参照。
+
 ## Claude Code プラグイン
 
 `plugins/` に個人用の Claude Code プラグインを置き、`.claude-plugin/marketplace.json` でマーケットプレイスとして束ねる。
@@ -105,19 +109,21 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 
 ## ファイル一覧
 
-| ファイル             | 説明                                                 |
-| -------------------- | ---------------------------------------------------- |
-| `dotfiles/.zshrc`    | Zsh設定 (oh-my-zsh + powerlevel10k)                  |
-| `dotfiles/.p10k.zsh` | Powerlevel10kプロンプト設定                          |
-| `dotfiles/wt.zsh`    | git worktree 管理関数 (`wt` 系、`.zshrc` から source) |
-| `dotfiles/wt.test.zsh` | `wt.zsh` のテストスイート                          |
-| `.wslconfig`         | WSL2設定 (`C:\Users\<user>\.wslconfig` に手動コピー) |
-| `config`             | SSH configテンプレート (手動コピー)                  |
-| `custom_keymap.txt`  | Google日本語入力カスタムキーマップ                   |
-| `extensions.json`    | VSCode推奨拡張機能                                   |
-| `setup-git.sh`       | Git共通設定スクリプト (user設定除く)                 |
-| `install.sh`         | セットアップスクリプト                               |
-| `setup-antigravity.sh` | Antigravity設定シンボリックリンク作成スクリプト    |
-| `antigravity/`       | Antigravity (Gemini) 設定・アダプタ                 |
-| `setup-claude.sh`    | `claude/settings.base.json` を `~/.claude/settings.json` にマージ |
-| `claude/`            | Claude Code ユーザー設定のベース                    |
+| ファイル                 | 説明                                                              |
+| ------------------------ | ----------------------------------------------------------------- |
+| `install.sh`             | セットアップスクリプト                                            |
+| `dotfiles/.zshrc`        | Zsh設定 (oh-my-zsh + powerlevel10k)                               |
+| `dotfiles/.p10k.zsh`     | Powerlevel10kプロンプト設定                                       |
+| `dotfiles/wt.zsh`        | git worktree 管理関数 (`wt` 系、`.zshrc` から source)             |
+| `dotfiles/wt.test.zsh`   | `wt.zsh` のテストスイート                                         |
+| `claude-agents-proxy/`   | Windows Terminal の Agent View 描画崩れ対策 (`.zshrc` から source) |
+| `setup-claude.sh`        | `claude/settings.base.json` を `~/.claude/settings.json` にマージ |
+| `claude/`                | Claude Code ユーザー設定のベース                                  |
+| `plugins/`               | Claude Code プラグイン (`.claude-plugin/marketplace.json` で束ねる) |
+| `setup-antigravity.sh`   | Antigravity設定シンボリックリンク作成スクリプト                   |
+| `antigravity/`           | Antigravity (Gemini) 設定・アダプタ                               |
+| `setup-git.sh`           | Git共通設定スクリプト (user設定除く)                              |
+| `.wslconfig`             | WSL2設定 (`C:\Users\<user>\.wslconfig` に手動コピー)              |
+| `config`                 | SSH configテンプレート (手動コピー)                               |
+| `custom_keymap.txt`      | Google日本語入力カスタムキーマップ                                |
+| `extensions.json`        | VSCode推奨拡張機能                                                |
