@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ui-principles ギャラリー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+/* 左に目次(広い幅)、右に原則のカード。カードは「見出し・条件・理由 → NG例とOK例」 */
+:root {
+  --bg: #f4f5f2; --surface: #ffffff; --surface-2: #eceee9; --fg: #1c211e; --muted: #59625d; --line: #d6dad3;
+  --accent: #2f5f86; --danger: #b2403a; --ok: #24744b; --danger-soft: #f8e6e4; --ok-soft: #e3f1e8; --on-strong: #ffffff;
+  --font-display: "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121614; --surface: #1a201d; --surface-2: #232a26; --fg: #e3e8e4; --muted: #a1aba5; --line: #2e3631;
+    --accent: #86afd6; --danger: #e8877f; --ok: #6ec697; --danger-soft: #331d1b; --ok-soft: #17291f; --on-strong: #111513;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+    --bg: #121614; --surface: #1a201d; --surface-2: #232a26; --fg: #e3e8e4; --muted: #a1aba5; --line: #2e3631;
+    --accent: #86afd6; --danger: #e8877f; --ok: #6ec697; --danger-soft: #331d1b; --ok-soft: #17291f; --on-strong: #111513;
+    color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.7; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.shell { max-width: 1100px; margin: 0 auto; padding-block: 32px 80px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; }
+@media (max-width: 860px) { .shell { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-block: 20px 64px; } }
+.shell > * { min-width: 0; }
+html, body { overflow-x: clip; }
+nav { position: sticky; top: 16px; align-self: start; display: flex; flex-direction: column; gap: 14px; font-size: 13px; }
+@media (max-width: 860px) { nav { position: static; } }
+.navgroup { display: flex; flex-direction: column; gap: 2px; }
+.navgroup span { font-size: 11px; color: var(--muted); letter-spacing: .04em; padding: 0 8px 2px; }
+.navgroup a { color: var(--fg); text-decoration: none; padding: 3px 8px; border-radius: 6px; }
+.navgroup a:hover, .navgroup a:focus-visible { background: var(--surface-2); outline: none; }
+@media (max-width: 860px) { .navgroup { flex-direction: row; flex-wrap: wrap; gap: 4px; } .navgroup span { width: 100%; } .navgroup a { border: 1px solid var(--line); } }
+header { display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+h1 { font-family: var(--font-display); font-size: clamp(24px, 4.6vw, 32px); line-height: 1.3; margin: 0; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 64ch; }
+.counts { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 13px; }
+.tools input[type=search] { font: inherit; min-height: 36px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); min-width: 0; flex: 1 1 220px; max-width: 360px; }
+.tools label { display: inline-flex; gap: 6px; align-items: center; }
+section { padding-top: 36px; display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 12px; }
+h2 { font-family: var(--font-display); font-size: 22px; margin: 0; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+h2 small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.scope { margin: 0; color: var(--muted); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.card.must { border-color: color-mix(in srgb, var(--fg) 45%, var(--line)); }
+.head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.strength { font-size: 12px; font-weight: 700; border: 1px solid var(--fg); border-radius: 5px; padding: 0 7px; }
+.card.must .strength, li[data-must="1"] .strength { background: var(--fg); color: var(--bg); }
+.cond { font-size: 12px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 4px; padding: 0 7px; }
+.cond.any { color: var(--muted); background: transparent; border: 1px dashed var(--line); }
+.card h3 { font-family: var(--font-display); font-size: 16px; line-height: 1.55; margin: 0; text-wrap: pretty; }
+.why, .meta { margin: 0; font-size: 14px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; margin-right: 4px; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 4px; }
+@media (max-width: 560px) { .pair { grid-template-columns: minmax(0, 1fr); } }
+.ex { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ex figcaption { font-size: 12px; color: var(--muted); }
+.ex.ng figcaption b { color: var(--danger); }
+.ex.ok figcaption b { color: var(--ok); }
+.ex .stage { border-radius: 10px; padding: 12px; overflow-x: auto; }
+.ex.ng .stage { background: var(--danger-soft); }
+.ex.ok .stage { background: var(--ok-soft); }
+.checkh { font-family: var(--font-display); font-size: 15px; margin: 6px 0 0; color: var(--muted); }
+.checks { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.checks .strength, .checks .cond { margin-left: 6px; }
+[hidden] { display: none !important; }
+/* 図解の部品 */
+.m-frame { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; line-height: 1.5; max-width: 260px; }
+.m-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.m-col { display: flex; flex-direction: column; gap: 6px; }
+.m-btn { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; min-height: 26px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 12px; white-space: nowrap; }
+.m-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-strong); }
+.m-btn.danger { background: var(--danger); border-color: var(--danger); color: var(--on-strong); }
+.m-btn.ghost { border-color: transparent; background: transparent; color: var(--accent); }
+.m-input { border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 26px; background: var(--surface); color: var(--fg); }
+.m-label { font-size: 11px; color: var(--muted); }
+.m-err { font-size: 11px; color: var(--danger); }
+.m-note { font-size: 11px; color: var(--muted); }
+.m-dialog { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+.m-toast { background: var(--fg); color: var(--bg); border-radius: 6px; padding: 4px 8px; font-size: 11px; }
+.m-chip { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-size: 11px; }
+.m-check { display: inline-flex; align-items: center; gap: 4px; }
+.m-check::before { content: ""; width: 12px; height: 12px; border: 1px solid var(--muted); border-radius: 3px; background: var(--surface); }
+.m-check.on::before { background: var(--accent); border-color: var(--accent); }
+.m-strike { text-decoration: line-through; }
+.m-dim { opacity: .5; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav aria-label="目次">{{NAV}}</nav>
+  <main>
+    <header>
+      <h1>ui-principles ギャラリー</h1>
+      <p class="lead">Claude Code の skill <a href="https://github.com/kuu13580/dotfiles/tree/main/plugins/ui-principles">ui-principles</a> に入っている UI/UX の原則を、NG例とOK例で見られるようにしたページ。人が確かめるためのもので、Claude はこのページを読まない。</p>
+      <p class="counts">{{COUNTS}}</p>
+      <div class="tools">
+        <input type="search" id="q" placeholder="見出しや条件で絞り込む" aria-label="見出しや条件で絞り込む">
+        <label><input type="checkbox" id="must"> 必須だけ</label>
+      </div>
+    </header>
+    {{BODY}}
+  </main>
+</div>
+<script>
+(() => {
+  const q = document.getElementById("q"), must = document.getElementById("must");
+  const nodes = [...document.querySelectorAll("[data-text]")];
+  const apply = () => {
+    const t = q.value.trim().toLowerCase(), m = must.checked;
+    for (const n of nodes) n.hidden = (m && n.dataset.must !== "1") || (t && !n.dataset.text.toLowerCase().includes(t));
+  };
+  q.addEventListener("input", apply);
+  must.addEventListener("change", apply);
+})();
+</script>
+</body>
+</html>
