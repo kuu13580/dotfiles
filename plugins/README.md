@@ -59,6 +59,11 @@ rebase のコンフリクトを、base 側で該当行を変更した PR と自�
 抽象的・演出的な AI 特有のトーンを排し、具体的で直接伝わる日本語で出力させる出力スタイル (output style) プラグイン。`/output-style Remove AI Tone`。
 → [remove-ai-tone/README.md](remove-ai-tone/README.md)
 
+### ui-principles (v0.1.0)
+
+プロダクトによらない UI/UX の原則集 skill。画面の実装・UIレビュー・文言作成・入力フロー設計で自動発動し、幅・入力手段・利用頻度・トーンなどの文脈を判定して、条件に合う原則だけを reference から読む。作業中に出たこだわりは聞いたうえで受付箱 (`~/.claude/ui-principles/inbox.md`) に溜め、次のプロダクトから反映する。
+→ [ui-principles/README.md](ui-principles/README.md)
+
 ---
 
 新しいプラグインを追加したら、この一覧と `.claude-plugin/marketplace.json` に追記する。

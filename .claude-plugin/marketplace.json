@@ -58,6 +58,11 @@
       "name": "remove-ai-tone",
       "source": "./plugins/remove-ai-tone",
       "description": "AIのトーンを削除し、より自然な言葉遣いに変換する"
+    },
+    {
+      "name": "ui-principles",
+      "source": "./plugins/ui-principles",
+      "description": "プロダクトによらないUI/UXの原則集。UIの実装・レビュー・文言作成・入力フロー設計で発動し、幅・入力手段・利用頻度・トーンなどの文脈に合う原則だけを参照する。作業中のこだわりは受付箱に溜めて次のプロダクトから反映する"
     }
   ]
 }
