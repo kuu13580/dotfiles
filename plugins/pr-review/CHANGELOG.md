@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-10-21
+
+### Changed
+
+- 洗い出しの前に `explain-change` で変更の解説を作るのを既定にした (`--explain` を廃止し `--no-explain` で省略)。大きい PR ほど解説なしでは全体を掴めないため、規模による省略はしない。explain-change が無い環境では、その旨と要点 5 行を出す
+- 報告と引き継ぎメモの「実機確認待ち」を「🧪 動作確認してください」に広げた。explain-change が挙げた動作確認の点 (リファクタリングで `変わる` / `未確認` と判定された箇所を含む) を同じ一覧に載せる
+- explain-change が見つけた PR の説明とコードの食い違いを、【確認】の候補に加える
+
+### Fixed
+
+- `--explain` で explain-change を呼べていなかった。explain-change が `disable-model-invocation: true` で、Skill ツールからの呼び出しがブロックされるため (explain-change 側で設定を外した)
+
 ## [0.5.0] - 2026-10-07
 
 ### Changed
