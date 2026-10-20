@@ -29,9 +29,9 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 自分が書いた未 submit のドラフトレビュー (GitHub の Pending review) を submit 前に検証し、各指摘を ✅ 妥当 / ✏️ 要修正 / ❌ 取り下げ推奨 / ❓ 要確認 に分類して理由付きでレポートする read-only スキル。`/check-review-validity [<PR番号> | <PR URL>]`。
 → [check-review-validity/README.md](check-review-validity/README.md)
 
-### explain-change (v1.0.0)
+### explain-change (v1.1.0)
 
-PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
+PR / commit / ブランチ / 現 worktree の変更を調査し、一枚絵で全体像を見せてから種類別 (リファクタリング / 不具合修正 / 新機能) に要点と動作確認すると良い点を示す解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
 → [explain-change/README.md](explain-change/README.md)
 
 ### prepare-context (v0.4.0)

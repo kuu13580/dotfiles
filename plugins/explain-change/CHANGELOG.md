@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-21
+
+### Changed
+
+- 5 章構成の長文解説をやめ、「全体像 (3 行サマリ + 一枚絵) → 種類別の中段 → 動作確認すると良い点」の構成に変更。段落は各ブロック 2 文までにし、詳細はコードリンクに任せる
+- 変更の種類 (リファクタリング / 不具合修正 / 新機能) を PR のタイプ欄・ラベル・コミット接頭辞から判定し、構成を変える
+  - リファクタリング: 一枚絵は小さめ。挙動が変わる可能性のある箇所ごとに `変わる / 変わらない / 未確認` を判定し、変更前後のフローと根拠を示す。PR description の主張もコードで検証する
+  - 不具合修正: 一枚絵で症状と処理経路を修正前後で比較し、再現条件 / 原因 / 修正をカードにする
+  - 新機能: 一枚絵を画面構成図にし、追加 / 変更・削除 / 既存を塗り分ける
+- 引数なしの対象を「未コミット変更を優先」から「カレントブランチの PR を優先」に変更。PR に未反映の手元の変更 (未 push のコミット・未コミット) は `local_changes` として足す。未追跡ファイルが 1 つ残っているだけで PR 全体ではなく未コミット分だけが対象になっていたため
+
+- `disable-model-invocation` を外し、pr-review から Skill ツールで呼べるようにした。description で起動する場面を「解説を明示的に求められたとき / pr-review から」に絞る
+- 報告に「動作確認すると良い点」を `path:line` と手順付きで含める (pr-review が取り込むため)
+
+### Added
+
+- `assets/base.css`: 全解説で共通のトークンと部品。色の意味を固定し、毎回同じ見た目にする。表の列に最小幅を設け、狭い場所で列が潰れてセルが縦に伸びるのを防ぐ
+- `resolve-target.sh`: PR 対象のとき `code_links` (`blob_base` / `after` / `before`) を返す。コードリンクを commit 固定にし、変更前のコードにもリンクできるようにする
+
 ## [1.0.0] - 2026-08-26
 
 ### Added
