@@ -62,6 +62,7 @@ rebase のコンフリクトを、base 側で該当行を変更した PR と自�
 ### ui-principles (v0.1.0)
 
 プロダクトによらない UI/UX の原則集 skill。画面の実装・UIレビュー・文言作成・入力フロー設計で自動発動し、幅・入力手段・利用頻度・トーンなどの文脈を判定して、条件に合う原則だけを reference から読む。作業中に出たこだわりは聞いたうえで受付箱 (`~/.claude/ui-principles/inbox.md`) に溜め、次のプロダクトから反映する。
+原則を NG 例・OK 例付きで見られるギャラリー: https://kuu13580.github.io/dotfiles/ui-principles/
 → [ui-principles/README.md](ui-principles/README.md)
 
 ---

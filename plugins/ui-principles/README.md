@@ -32,7 +32,9 @@
 
 ## ギャラリー(人が見る用)
 
-原則を NG 例・OK 例付きで見られる静的ページを `docs/ui-principles/` に置いている(GitHub Pages で公開)。Claude は読まない。
+原則を NG 例・OK 例付きで見られる静的ページ: https://kuu13580.github.io/dotfiles/ui-principles/
+
+ソースは `docs/ui-principles/` で、GitHub Pages(main の `/docs`)から公開している。Claude は読まない。
 
 - 生成: `python3 docs/ui-principles/build.py`(references と `examples.json` から `index.html` を作る)
 - `examples.json` は原則の見出しをキーにした図解。見出しを変えたらキーも合わせる(合わないものは実行時に警告が出る)
