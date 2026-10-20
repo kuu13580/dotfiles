@@ -68,7 +68,7 @@ emit() {
     --arg diff_command "$diff_command" --arg local_code "$local_code" \
     --argjson meta "$meta" --argjson extra "$extra" \
     '{kind: $kind, label: $label, base: $base, head: $head, diff_command: $diff_command,
-      untracked: [], local_code: $local_code, pr: null} + $meta + $extra'
+      untracked: [], local_code: $local_code, pr: null, code_links: null} + $meta + $extra'
 }
 
 # 引数をブランチの完全 ref に解決する (ローカル優先 → リモート)。見つからなければ 1。
@@ -107,7 +107,7 @@ resolve_worktree() {
     --argjson meta "$meta" \
     '{kind: $kind, label: $label, base: $base, head: $head,
       diff_command: $diff_command, untracked: $untracked,
-      local_code: "exact", pr: null} + $meta'
+      local_code: "exact", pr: null, code_links: null} + $meta'
 }
 
 # ---------------------------------------------------------------- pr
@@ -141,12 +141,35 @@ resolve_pr() {
   local diff_cmd="gh pr diff ${num}"
   [ -n "$repo_slug" ] && diff_cmd="${diff_cmd} --repo $(shq "$repo_slug")"
 
+  # コードリンクの基準 commit。マージ済みはマージコミットとその第1親、未マージは head と merge-base。
+  # 取れなくても解説は書けるので、失敗は空文字にして続行する
+  local slug after_oid before_oid pr_count hist
+  slug=$(jq -r '.url | capture("github.com/(?<s>[^/]+/[^/]+)/pull").s' <<<"$view")
+  after_oid=$(jq -r '.mergeCommit.oid // .headRefOid' <<<"$view")
+  if [ -n "$(jq -r '.mergeCommit.oid // ""' <<<"$view")" ]; then
+    before_oid=$(gh api "repos/${slug}/commits/${after_oid}" -q '.parents[0].sha' 2>/dev/null || true)
+    # rebase merge はマージコミットが PR の最後のコミットになるので、第1親だと途中のコミットを指す。
+    # 直近の祖先の件名が PR のコミットと順に一致したら rebase merge とみなし、その手前を変更前にする
+    pr_count=$(jq '.commits | length' <<<"$view")
+    if [ "$pr_count" -gt 1 ]; then
+      hist=$(gh api "repos/${slug}/commits?sha=${after_oid}&per_page=$((pr_count + 1))" \
+        --jq '[.[] | {sha, s: (.commit.message | split("\n")[0])}]' 2>/dev/null || echo '[]')
+      if jq -e --argjson v "$view" --argjson n "$pr_count" \
+        'length > $n and (.[0:$n] | map(.s) | reverse) == ($v.commits | map(.messageHeadline))' <<<"$hist" >/dev/null 2>&1; then
+        before_oid=$(jq -r --argjson n "$pr_count" '.[$n].sha' <<<"$hist")
+      fi
+    fi
+  else
+    before_oid=$(gh api "repos/${slug}/compare/$(jq -r '.baseRefName' <<<"$view")...${after_oid}" -q '.merge_base_commit.sha' 2>/dev/null || true)
+  fi
+
   jq -n \
     --arg kind "pr" \
     --arg diff_command "$diff_cmd" \
     --argjson view "$view" \
     --argjson files "$files" \
     --arg local_code "$state" \
+    --arg blob_base "https://github.com/${slug}/blob" --arg after_oid "$after_oid" --arg before_oid "$before_oid" \
     '{kind: $kind,
       label: "PR #\($view.number) \($view.title)",
       base: $view.baseRefName,
@@ -158,7 +181,8 @@ resolve_pr() {
       untracked: [],
       local_code: $local_code,
       pr: {number: $view.number, title: $view.title, body: $view.body, url: $view.url,
-           state: $view.state, author: $view.author.login}}'
+           state: $view.state, author: $view.author.login, head_oid: $view.headRefOid},
+      code_links: {blob_base: $blob_base, after: $after_oid, before: $before_oid}}'
 }
 
 # ---------------------------------------------------------------- commit
@@ -208,16 +232,41 @@ resolve_branch() {
        "git diff $(shq "${mb}..${ref}")" "$state" "$meta" "$extra"
 }
 
+# ---------------------------------------------------------------- local changes
+# 引数なしで PR を対象にしたとき、PR にまだ入っていない手元の変更 (未 push のコミット + 未コミット) を足す。
+# PR の head が HEAD の祖先なら head からの差分、そうでなければ (未 fetch / 巻き戻し) 未コミット分だけを拾う。
+#   $1 resolve_pr の出力 JSON
+attach_local_changes() {
+  local out="$1" head_oid base unpushed=false files untracked
+  head_oid=$(jq -r '.pr.head_oid' <<<"$out")
+  if git merge-base --is-ancestor "$head_oid" HEAD 2>/dev/null; then
+    base="$head_oid"
+    [ "$(git rev-parse HEAD)" != "$head_oid" ] && unpushed=true
+  else
+    base="HEAD"
+  fi
+  if [ "$unpushed" = false ] && [ "$DIRTY" = false ]; then
+    echo "$out"
+    return 0
+  fi
+  files=$(git diff --name-only "$base" | jq -R -s 'split("\n") | map(select(length > 0))')
+  untracked=$(git ls-files --others --exclude-standard | jq -R -s 'split("\n") | map(select(length > 0))')
+  jq --arg cmd "git diff $(shq "$base")" --argjson unpushed "$unpushed" --argjson files "$files" --argjson untracked "$untracked" \
+    '. + {local_changes: {diff_command: $cmd, includes_unpushed_commits: $unpushed, files: $files, untracked: $untracked}}' <<<"$out"
+}
+
 # ---------------------------------------------------------------- dispatch
 OUT=""
 if [ -z "$ARG" ]; then
-  if [ "$DIRTY" = true ]; then
+  num=""
+  command -v gh >/dev/null 2>&1 && num=$(gh pr view --json number -q .number 2>/dev/null)
+  if [ -n "$num" ]; then
+    OUT=$(resolve_pr "$num" "") || exit $?
+    OUT=$(attach_local_changes "$OUT") || exit $?
+  elif [ "$DIRTY" = true ]; then
     OUT=$(resolve_worktree) || exit $?
   else
-    command -v gh >/dev/null 2>&1 || undecided "未コミットの変更がなく、gh CLI もないため対象を特定できません。PR 番号 / commit / ブランチ名を指定してください。"
-    num=$(gh pr view --json number -q .number 2>/dev/null) \
-      || undecided "未コミットの変更がなく、カレントブランチに対応する PR も見つかりません。PR 番号 / commit / ブランチ名を指定してください。"
-    OUT=$(resolve_pr "$num" "") || exit $?
+    undecided "カレントブランチに対応する PR も未コミットの変更もないため対象を特定できません。PR 番号 / commit / ブランチ名を指定してください。"
   fi
 elif [[ "$ARG" =~ ^[0-9]+$ ]]; then
   OUT=$(resolve_pr "$ARG" "") || exit $?

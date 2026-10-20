@@ -1,7 +1,7 @@
 ---
 name: pr-review
-description: "他人の PR をレビューする一連の作法。自分宛 (個人指名) のレビュー依頼の選択、不具合 / 規約違反 / 仕様・設計の確認事項の切り分け、テストによる再検証、検証できたものだけの pending コメント投稿、修正後の対応確認・Resolve・Approve までを通す。引数で PR 番号か URL、省略時は自分宛の依頼一覧から選ぶ。--explain で洗い出しの前に変更の解説を作る。submit / Approve / 返信 / Resolve はユーザーの確認後にのみ行う。"
-argument-hint: "[<PR番号> | <PR URL>] [--review | --verify] [--explain] [medium | high | max]"
+description: "他人の PR をレビューする一連の作法。自分宛 (個人指名) のレビュー依頼の選択、不具合 / 規約違反 / 仕様・設計の確認事項の切り分け、テストによる再検証、検証できたものだけの pending コメント投稿、修正後の対応確認・Resolve・Approve までを通す。引数で PR 番号か URL、省略時は自分宛の依頼一覧から選ぶ。洗い出しの前に explain-change で変更の解説を作り (--no-explain で省略)、動作確認したほうが良い箇所を報告に含める。submit / Approve / 返信 / Resolve はユーザーの確認後にのみ行う。"
+argument-hint: "[<PR番号> | <PR URL>] [--review | --verify] [--no-explain] [medium | high | max]"
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob, Agent, Skill, Artifact, AskUserQuestion
 disable-model-invocation: true
 ---
@@ -37,7 +37,7 @@ pending review は本人にしか見えないので、投稿は確認なしで�
 | `https://github.com/<owner>/<repo>/pull/<N>` | その PR (別リポジトリ可) |
 | `--review` | フェーズA を強制 |
 | `--verify` | フェーズB を強制 |
-| `--explain` | 洗い出しの前に変更の解説を作る (フェーズA のみ) |
+| `--no-explain` | フェーズA の洗い出し前に作る変更の解説を省略する |
 | `medium` / `high` / `max` | `/code-review` の effort level (既定 `high`) |
 
 `/code-review` はレベル無指定だと「前回使ったレベル」を引き継ぐ仕様なので、**必ず明示する**。

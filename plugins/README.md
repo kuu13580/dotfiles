@@ -29,9 +29,9 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 自分が書いた未 submit のドラフトレビュー (GitHub の Pending review) を submit 前に検証し、各指摘を ✅ 妥当 / ✏️ 要修正 / ❌ 取り下げ推奨 / ❓ 要確認 に分類して理由付きでレポートする read-only スキル。`/check-review-validity [<PR番号> | <PR URL>]`。
 → [check-review-validity/README.md](check-review-validity/README.md)
 
-### explain-change (v1.0.0)
+### explain-change (v1.1.0)
 
-PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
+PR / commit / ブランチ / 現 worktree の変更を調査し、一枚絵で全体像を見せてから種類別 (リファクタリング / 不具合修正 / 新機能) に要点と動作確認すると良い点を示す解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
 → [explain-change/README.md](explain-change/README.md)
 
 ### prepare-context (v0.4.0)
@@ -44,9 +44,9 @@ PR / commit / ブランチ / 現 worktree の変更を調査し、その領域�
 rebase のコンフリクトを、base 側で該当行を変更した PR と自分のコミット・PR の文脈を読んだ上で解消する。引用できる根拠がある箇所だけ自動で解消して完了後にサマリで報告し、根拠のない箇所は承認モードにかかわらずユーザーに確認する。`/rebase-with-context [<base>]`。
 → [rebase-with-context/README.md](rebase-with-context/README.md)
 
-### pr-review (v0.5.0)
+### pr-review (v0.6.0)
 
-他人の PR をレビューする作法を通すスキル。個人指名の依頼抽出 → 不具合 / 規約 / 仕様・設計の確認事項に切り分け (規約は引用必須) → テストによる再検証 → 検証できたものだけ pending 投稿 → 修正確認 → Resolve / Approve。submit は行わず、Approve / 返信 / Resolve は承認後にのみ実行する。`/pr-review [<PR番号> | <PR URL>] [--review | --verify] [--explain]`。
+他人の PR をレビューする作法を通すスキル。個人指名の依頼抽出 → 不具合 / 規約 / 仕様・設計の確認事項に切り分け (規約は引用必須) → テストによる再検証 → 検証できたものだけ pending 投稿 → 修正確認 → Resolve / Approve。洗い出しの前に explain-change で解説を作り、動作確認したほうが良い箇所も報告する。submit は行わず、Approve / 返信 / Resolve は承認後にのみ実行する。`/pr-review [<PR番号> | <PR URL>] [--review | --verify] [--no-explain]`。
 → [pr-review/README.md](pr-review/README.md)
 
 ### code-peek (v0.2.0)

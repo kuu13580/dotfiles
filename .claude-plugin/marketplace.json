@@ -32,7 +32,7 @@
     {
       "name": "explain-change",
       "source": "./plugins/explain-change",
-      "description": "PR / commit / ブランチ / 現 worktree の変更を調査し、その領域を知らない読者がゼロから読み解ける長文解説を Artifact として publish する read-only スキル"
+      "description": "PR / commit / ブランチ / 現 worktree の変更を調査し、一枚絵で全体像を見せてから種類別 (リファクタリング / 不具合修正 / 新機能) に要点と動作確認すると良い点を示す解説を Artifact として publish する read-only スキル"
     },
     {
       "name": "prepare-context",
