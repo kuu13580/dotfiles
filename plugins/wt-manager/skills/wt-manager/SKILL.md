@@ -109,6 +109,10 @@ wt claude <name>                               # 並列セッション投入 (id
 - 既存 worktree へ移る: `EnterWorktree({ path: "<絶対パス>" })` (パスは `wt ls -p` / `git worktree list` で取得)
 - 退出: `ExitWorktree({ action: "keep" })` のみ。`"remove"` は使わない (削除は `wt rm` が担当)
 - `EnterWorktree` の **name モード (新規作成) は使わない** — `.claude/worktrees/` 配下に `origin/<default>` から切る挙動で、`wt` の description も配置規約 (parent パターン) も無視するため
+- **`EnterWorktree({ path })` で入れる範囲は harness が制限している**:
+  - 起動ディレクトリからの初回: 今のリポジトリ (か入れ子のリポジトリ) の worktree のみ
+  - すでに worktree 内のセッションから: 同じリポジトリの `.claude/worktrees/` 配下のみ (wt の配置先は対象外)
+  - 範囲外 (別リポジトリの worktree、worktree 間の移動など) は `Cannot enter worktree: ... is not a registered worktree` で失敗する。この場合は `EnterWorktree` を繰り返さず、`wt claude <name>` で新しいセッションを立てるようユーザーに案内する
 
 > hook が `EnterWorktree`(name あり) と `ExitWorktree`(`action:"remove"`) を deny し、deny 理由で正しいフローへ誘導する。
 
