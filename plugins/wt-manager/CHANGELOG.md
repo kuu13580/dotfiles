@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-11-05
+
+### Fixed
+
+- **PreToolUse hook (`guard-worktree.sh`) が実行されず、ガードが効いていなかった問題**: git 上のモードが 100644 で、hooks.json から直接実行すると Permission denied になり、`EnterWorktree` name モードと `ExitWorktree` remove の deny が素通りしていた。実行権を付与
+- **SKILL.md Rule 5 に `EnterWorktree({ path })` で入れる範囲を追記**: 別リポジトリの worktree や worktree 間の移動は harness の仕様で失敗するため、`wt claude <name>` で新しいセッションを立てるよう案内する
+
 ## [1.11.0] - 2026-10-07
 
 ### Added
