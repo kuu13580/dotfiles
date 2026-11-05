@@ -156,6 +156,9 @@ function gh-needs-action() {
 # (works through symlinks; ${${(%):-%x}:A:h} = resolved absolute dir of this file)
 [[ -f "${${(%):-%x}:A:h}/wt.zsh" ]] && source "${${(%):-%x}:A:h}/wt.zsh"
 
+# Windows Terminal で Agent View の描画崩れを避ける (claude-agents-proxy/README.md)
+[[ -f "${${(%):-%x}:A:h:h}/claude-agents-proxy/claude-agents.zsh" ]] && source "${${(%):-%x}:A:h:h}/claude-agents-proxy/claude-agents.zsh"
+
 # Claude Code
 # - FORCE_HYPERLINK: OSC 8 の端末検出をバイパスして footer PR バッジ等を常に clickable にする
 #   (Windows Terminal 等で auto-detect 外れ対策。非対応端末で escape が生文字化するなら外す)
