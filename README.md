@@ -103,6 +103,12 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 
 各プラグインの概要は [plugins/README.md](plugins/README.md) を参照。
 
+## Windows Terminal キー設定
+
+Windows Terminal は Shift+Enter を Enter と区別して送らないため、`windows-terminal.json` の内容を Windows Terminal の `settings.json` の `actions` / `keybindings` に手動でマージする (Shift+Enter で `ESC[13;2u` を送り、Claude Code で改行になる)。
+
+この設定は全プロファイルに効くため、CSI u 非対応のアプリ (zsh のプロンプトなど) では Shift+Enter が Enter として動かなくなる。
+
 ## ファイル一覧
 
 | ファイル             | 説明                                                 |
@@ -121,3 +127,4 @@ Powerlevel10kの表示に必要。[こちら](https://github.com/romkatv/powerle
 | `antigravity/`       | Antigravity (Gemini) 設定・アダプタ                 |
 | `setup-claude.sh`    | `claude/settings.base.json` を `~/.claude/settings.json` にマージ |
 | `claude/`            | Claude Code ユーザー設定のベース                    |
+| `windows-terminal.json` | Windows Terminal 設定の差分 (手動マージ)          |
