@@ -55,6 +55,11 @@
       "description": "返答中の path:line をクリックするとファイルを pane に開いて該当行までスクロールする mod。ファイル名だけの参照も git ls-files から解決する"
     },
     {
+      "name": "md-view",
+      "source": "./plugins/md-view",
+      "description": "返答中の mermaid を図で表示し (端末は leaf の ASCII 図、Desktop は mermaid-cli の SVG)、/md で Markdown ファイルを pane に表示する mod。図にできる環境では mermaid を使ってよいとシステムプロンプトで伝える"
+    },
+    {
       "name": "remove-ai-tone",
       "source": "./plugins/remove-ai-tone",
       "description": "AIのトーンを削除し、より自然な言葉遣いに変換する"
