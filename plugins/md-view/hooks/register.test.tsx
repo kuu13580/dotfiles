@@ -20,19 +20,22 @@ const DOC = '# 見出し\n\n本文\n\n```mermaid\ngraph TD\n  A-->B\n```\n\n後�
 const ASCII = '┌───┐\n│ A │\n└───┘'
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg"><text>A</text></svg>'
 
-function engine(on: any, tools: { leaf: boolean; mmdc: boolean }) {
+type Overrides = { now?: () => number; leafInline?: () => { exitCode: number; stdout: string } }
+
+function engine(on: any, tools: { leaf: boolean; mmdc: boolean }, over: Overrides = {}) {
   on('command.register', () => ({ value: { command: 'md' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('session.start', (_: unknown, e: any) => ({ cwd: e.cwd }))
   on('session.cwd', () => ({ value: '/work' }))
-  on('clock.now', () => ({ value: 100000 }))
+  on('clock.now', () => ({ value: over.now?.() ?? 100000 }))
   on('fs.read', () => ({ value: DOC }))
   on('fs.stat', () => ({ value: { kind: 'file', size: DOC.length, mtimeMs: 1, isSymbolicLink: false } }))
   on('process.run', (_: unknown, e: any) => {
     const cmd = e.argv[0] as 'leaf' | 'mmdc'
     if (!tools[cmd]) throw new Error(`spawn ${cmd} ENOENT`)
     const out = e.argv.includes('--version') ? '1.0.0' : cmd === 'leaf' ? ASCII : SVG
-    return { value: { exitCode: 0, stdout: out, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    const r = cmd === 'leaf' && e.argv[1] === '--inline' && over.leafInline ? over.leafInline() : { exitCode: 0, stdout: out }
+    return { value: { ...r, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('ui.render', ($: any, e: any) => {
     const { Markdown } = $.ui.resolve(e)
@@ -85,6 +88,34 @@ test('返答: 端末は ASCII の text フェンス、デスクトップは SVG'
   expect(await desk.find({ type: 'Svg' })).toBeDefined()
   expect(await desk.find({ type: 'Markdown', text: /# 見出し/ })).toBeDefined()
   await desk.unmount()
+})
+
+test('返答: leaf が一度失敗しても 30 秒後の描画で作り直す', async ($, on) => {
+  let now = 100000
+  let fail = true
+  engine(on, { leaf: true, mmdc: false }, { now: () => now, leafInline: () => (fail ? { exitCode: 1, stdout: '' } : { exitCode: 0, stdout: ASCII }) })
+  const draw = async () => {
+    const term = await $.ui.mount({ ...REPLY, surface: 'terminal' })
+    const md = await term.find({ type: 'Markdown' })
+    await term.unmount()
+    return md?.text
+  }
+  expect(await draw()).toMatch(/```mermaid\ngraph TD/)
+  fail = false
+  expect(await draw()).toMatch(/```mermaid\ngraph TD/)
+  now += 31000
+  expect(await draw()).toMatch(/```text\n┌───┐/)
+})
+
+test('返答: 同じ図の描画が重なっても leaf は 1 回だけ実行する', async ($, on) => {
+  let runs = 0
+  engine(on, { leaf: true, mmdc: false }, { leafInline: () => (runs++, { exitCode: 0, stdout: ASCII }) })
+  const mounts = await Promise.all(['a', 'b', 'c'].map(requestId => $.ui.mount({ ...REPLY, requestId, surface: 'terminal' })))
+  for (const m of mounts) {
+    expect((await m.find({ type: 'Markdown' }))?.text).toMatch(/```text\n┌───┐/)
+    await m.unmount()
+  }
+  expect(runs).toBe(1)
 })
 
 test('返答: mobile は書き換えずソースのまま', async ($, on) => {
