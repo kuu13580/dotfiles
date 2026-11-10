@@ -28,7 +28,7 @@ brew install leaf-markdown-viewer
 npm install -g @rivolink/leaf
 ```
 
-**mermaid-cli** (Desktop / VS Code の SVG、コマンド名 `mmdc`): 公式の配布は npm と Docker のみ。md-view は PATH 上の `mmdc` を呼ぶため npm で入れる。
+**mermaid-cli** (Desktop / VS Code の SVG、コマンド名 `mmdc`、12.0.0 以降): 公式の配布は npm と Docker のみ。md-view は PATH 上の `mmdc` を呼ぶため npm で入れる。11 系は `--no-font-embed` がなく SVG を作れないため、図は leaf の ASCII 図かソースになる。
 
 ```sh
 npm install -g @mermaid-js/mermaid-cli

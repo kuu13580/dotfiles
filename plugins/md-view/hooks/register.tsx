@@ -276,7 +276,7 @@ export const register: Register = on => {
   // Claude の返答中の mermaid を図に描き直す(保存される本文は元のまま、ctrl+o で原文)
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const text = e.props.text
-    if (!/^(`{3,}|~{3,})mermaid/m.test(text)) return next(e)
+    if (e.surface === 'mobile' || !/^(`{3,}|~{3,})mermaid/m.test(text)) return next(e)
     const segments = split(text)
     if (!segments.some(s => s.kind === 'mermaid')) return next(e)
     await hintInstall($, e.surface)

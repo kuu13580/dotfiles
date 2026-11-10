@@ -87,6 +87,14 @@ test('返答: 端末は ASCII の text フェンス、デスクトップは SVG'
   await desk.unmount()
 })
 
+test('返答: mobile は書き換えずソースのまま', async ($, on) => {
+  engine(on, { leaf: true, mmdc: true })
+  const mobile = await $.ui.mount({ ...REPLY, surface: 'mobile' })
+  expect(await mobile.find({ type: 'Markdown', text: /```mermaid\ngraph TD/ })).toBeDefined()
+  expect(await mobile.find({ type: 'Svg' })).toBeUndefined()
+  await mobile.unmount()
+})
+
 test('返答: mmdc がなければデスクトップは ASCII の text フェンス', async ($, on) => {
   engine(on, { leaf: true, mmdc: false })
   const desk = await $.ui.mount({ ...REPLY, surface: 'desktop' })
