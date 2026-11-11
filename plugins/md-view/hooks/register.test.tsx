@@ -18,12 +18,11 @@ const PANE = {
 
 const DOC = '# 見出し\n\n本文\n\n```mermaid\ngraph TD\n  A-->B\n```\n\n後ろ\n'
 const ASCII = '┌───┐\n│ A │\n└───┘'
-const SVG = '<svg xmlns="http://www.w3.org/2000/svg"><text>A</text></svg>'
 
 type LeafResult = { exitCode: number; stdout: string }
 type Overrides = { now?: () => number; leafInline?: () => LeafResult | Promise<LeafResult> }
 
-function engine(on: any, tools: { leaf: boolean; mmdc: boolean }, over: Overrides = {}) {
+function engine(on: any, tools: { leaf: boolean }, over: Overrides = {}) {
   on('command.register', () => ({ value: { command: 'md' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('session.start', (_: unknown, e: any) => ({ cwd: e.cwd }))
@@ -32,10 +31,9 @@ function engine(on: any, tools: { leaf: boolean; mmdc: boolean }, over: Override
   on('fs.read', () => ({ value: DOC }))
   on('fs.stat', () => ({ value: { kind: 'file', size: DOC.length, mtimeMs: 1, isSymbolicLink: false } }))
   on('process.run', async (_: unknown, e: any) => {
-    const cmd = e.argv[0] as 'leaf' | 'mmdc'
-    if (!tools[cmd]) throw new Error(`spawn ${cmd} ENOENT`)
-    const out = e.argv.includes('--version') ? '1.0.0' : cmd === 'leaf' ? ASCII : SVG
-    const r = cmd === 'leaf' && e.argv[1] === '--inline' && over.leafInline ? await over.leafInline() : { exitCode: 0, stdout: out }
+    if (e.argv[0] !== 'leaf' || !tools.leaf) throw new Error(`spawn ${e.argv[0]} ENOENT`)
+    const out = e.argv.includes('--version') ? '1.0.0' : ASCII
+    const r = e.argv[1] === '--inline' && over.leafInline ? await over.leafInline() : { exitCode: 0, stdout: out }
     return { value: { ...r, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('ui.render', ($: any, e: any) => {
@@ -48,8 +46,8 @@ const RUN = { command: 'md', origin: { kind: 'composer' }, presentation: { isFul
 
 const REPLY = { plugin: 'md-view', component: 'AssistantMessage', requestId: 'm1', props: { text: DOC, isFirstOfReply: true } } as const
 
-test('ペイン: 端末は leaf の ASCII、デスクトップは SVG', async ($, on) => {
-  engine(on, { leaf: true, mmdc: true })
+test('ペイン: 端末は leaf の ASCII、デスクトップは mermaid をそのまま渡す', async ($, on) => {
+  engine(on, { leaf: true })
   await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
   const r = await $.command.run({ ...RUN, args: 'notes/a.md' })
   expect(r.text).toBe('Markdown ペインで表示: /work/notes/a.md')
@@ -60,13 +58,13 @@ test('ペイン: 端末は leaf の ASCII、デスクトップは SVG', async ($
   await term.unmount()
 
   const desk = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  expect(await desk.find({ type: 'Svg' })).toBeDefined()
-  expect(await desk.find({ type: 'Markdown', text: /graph TD/ })).toBeUndefined()
+  expect(await desk.find({ type: 'Markdown', text: /```mermaid\ngraph TD/ })).toBeDefined()
+  expect(await desk.find({ type: 'Text', text: /│ A │/ })).toBeUndefined()
   await desk.unmount()
 })
 
-test('ペイン: 変換コマンドがなければ mermaid はソースのまま', async ($, on) => {
-  engine(on, { leaf: false, mmdc: false })
+test('ペイン: leaf がなければ mermaid はソースのまま', async ($, on) => {
+  engine(on, { leaf: false })
   await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
   await $.command.run({ ...RUN, args: '/work/a.md' })
 
@@ -77,24 +75,25 @@ test('ペイン: 変換コマンドがなければ mermaid はソースのまま
   }
 })
 
-test('返答: 端末は ASCII の text フェンス、デスクトップは SVG', async ($, on) => {
-  engine(on, { leaf: true, mmdc: true })
+test('返答: 端末は ASCII の text フェンス、端末以外は書き換えない', async ($, on) => {
+  engine(on, { leaf: true })
   const term = await $.ui.mount({ ...REPLY, surface: 'terminal' })
   const md = await term.find({ type: 'Markdown' })
   expect(md?.text).toMatch(/```text\n┌───┐/)
   expect(md?.text).not.toMatch(/graph TD/)
   await term.unmount()
 
-  const desk = await $.ui.mount({ ...REPLY, surface: 'desktop' })
-  expect(await desk.find({ type: 'Svg' })).toBeDefined()
-  expect(await desk.find({ type: 'Markdown', text: /# 見出し/ })).toBeDefined()
-  await desk.unmount()
+  for (const surface of ['desktop', 'vscode', 'mobile'] as const) {
+    const ui = await $.ui.mount({ ...REPLY, surface })
+    expect((await ui.find({ type: 'Markdown' }))?.text).toBe(DOC)
+    await ui.unmount()
+  }
 })
 
 test('返答: leaf が一度失敗しても 30 秒後の描画で作り直す', async ($, on) => {
   let now = 100000
   let fail = true
-  engine(on, { leaf: true, mmdc: false }, { now: () => now, leafInline: () => (fail ? { exitCode: 1, stdout: '' } : { exitCode: 0, stdout: ASCII }) })
+  engine(on, { leaf: true }, { now: () => now, leafInline: () => (fail ? { exitCode: 1, stdout: '' } : { exitCode: 0, stdout: ASCII }) })
   const draw = async () => {
     const term = await $.ui.mount({ ...REPLY, surface: 'terminal' })
     const md = await term.find({ type: 'Markdown' })
@@ -112,7 +111,7 @@ test('返答: 同じ図の描画が重なっても leaf は 1 回だけ実行す
   let runs = 0
   let release = () => {}
   const held = new Promise<void>(r => (release = r))
-  engine(on, { leaf: true, mmdc: false }, { leafInline: () => (runs++, held.then(() => ({ exitCode: 0, stdout: ASCII }))) })
+  engine(on, { leaf: true }, { leafInline: () => (runs++, held.then(() => ({ exitCode: 0, stdout: ASCII }))) })
   const pending = Promise.all(['a', 'b', 'c'].map(requestId => $.ui.mount({ ...REPLY, requestId, surface: 'terminal' })))
   // 型定義に DOM がないため globalThis から呼ぶ
   const tick = (ms: number) => new Promise(r => (globalThis as any).setTimeout(r, ms))
@@ -128,24 +127,8 @@ test('返答: 同じ図の描画が重なっても leaf は 1 回だけ実行す
   expect(runs).toBe(1)
 })
 
-test('返答: mobile は書き換えずソースのまま', async ($, on) => {
-  engine(on, { leaf: true, mmdc: true })
-  const mobile = await $.ui.mount({ ...REPLY, surface: 'mobile' })
-  expect(await mobile.find({ type: 'Markdown', text: /```mermaid\ngraph TD/ })).toBeDefined()
-  expect(await mobile.find({ type: 'Svg' })).toBeUndefined()
-  await mobile.unmount()
-})
-
-test('返答: mmdc がなければデスクトップは ASCII の text フェンス', async ($, on) => {
-  engine(on, { leaf: true, mmdc: false })
-  const desk = await $.ui.mount({ ...REPLY, surface: 'desktop' })
-  expect(await desk.find({ type: 'Svg' })).toBeUndefined()
-  expect(await desk.find({ type: 'Markdown', text: /```text\n┌───┐/ })).toBeDefined()
-  await desk.unmount()
-})
-
-test('返答: 図にできない surface では入れ方を一度だけ toast で知らせる', async ($, on) => {
-  engine(on, { leaf: false, mmdc: true })
+test('返答: leaf がなければ入れ方を一度だけ toast で知らせる', async ($, on) => {
+  engine(on, { leaf: false })
   const toasts: string[] = []
   on('ui.toast', (_, e) => {
     toasts.push(e.text)
@@ -158,7 +141,7 @@ test('返答: 図にできない surface では入れ方を一度だけ toast �
   expect(toasts).toHaveLength(1)
   expect(toasts[0]).toMatch(/@rivolink\/leaf/)
 
-  const desk = await $.ui.mount({ ...REPLY, surface: 'desktop' })
+  const desk = await $.ui.mount({ ...REPLY, requestId: 'm3', surface: 'desktop' })
   await desk.unmount()
   expect(toasts).toHaveLength(1)
 })
@@ -175,7 +158,7 @@ test('split: 他のコードフェンスの中の mermaid は図にしない', (
 })
 
 test('追従: pane が開いている時だけ Write した .md を読み込む', async ($, on) => {
-  engine(on, { leaf: true, mmdc: true })
+  engine(on, { leaf: true })
   let open = false
   on('ui.panes', () => ({
     value: open ? [{ id: 'md-view', title: 'Markdown', isShown: true, isFocused: false, isPlaced: true }] : [],
@@ -201,24 +184,25 @@ const BASE = { id: 'intro', text: 'base', scope: 'shared' } as const
 const hinted = async ($: any, surfaces: string[], traits: string[] = []) =>
   (await $.prompt.compose({ model: 'm', promptModel: 'm', tools: [], outputStyle: null, surfaces, traits })).sections.some((s: any) => s.id === 'md-view:mermaid')
 
-test('システムプロンプト: 図にできる surface がある時だけ mermaid の一節を足す', async ($, on) => {
-  engine(on, { leaf: false, mmdc: true })
+test('システムプロンプト: 図になる surface がある時だけ mermaid の一節を足す', async ($, on) => {
+  engine(on, { leaf: false })
   on('prompt.compose', () => ({ sections: [BASE] }))
   expect(await hinted($, ['desktop'])).toBe(true)
   expect(await hinted($, ['terminal'])).toBe(false)
   expect(await hinted($, ['mobile'])).toBe(false)
+  expect(await hinted($, ['vscode'])).toBe(false)
   expect(await hinted($, [])).toBe(false)
   expect(await hinted($, ['desktop'], ['bare'])).toBe(false)
 })
 
 test('システムプロンプト: leaf があれば端末でも足す', async ($, on) => {
-  engine(on, { leaf: true, mmdc: false })
+  engine(on, { leaf: true })
   on('prompt.compose', () => ({ sections: [BASE] }))
   expect(await hinted($, ['terminal'])).toBe(true)
 })
 
 test('引数なしで対象がなければ案内だけ返す', async ($, on) => {
-  engine(on, { leaf: true, mmdc: true })
+  engine(on, { leaf: true })
   await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
   const r = await $.command.run({ ...RUN, args: '' })
   expect(r.text).toMatch(/\/md <path>/)

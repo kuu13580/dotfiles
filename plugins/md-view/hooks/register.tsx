@@ -26,10 +26,6 @@ const isClose = (line: string, fence: string) => {
   const m = /^(`{3,}|~{3,})[ \t]*$/.exec(line)
   return !!m && m[1]![0] === fence[0] && m[1]!.length >= fence.length
 }
-// HTML ラベル(foreignObject)とフォント埋め込みを切り、Svg の上限 131072 文字に収める
-const MMDC_INIT = '%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%\n'
-const SVG_LIMIT = 131072
-
 // leaf の出力や md に混ざる制御文字は Text/Markdown が受け付けないため落とす
 const sanitize = (s: string) =>
   s.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '').replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '')
@@ -82,43 +78,20 @@ const toAscii = async ($: EngineInterface, source: string, cols: number) =>
     ? cached($, `ascii:${cols}\n${source}`, () => leafPlain($, { stdin: '```mermaid\n' + source + '```\n', cols }))
     : ''
 
-const toSvg = async ($: EngineInterface, source: string) =>
-  (await has($, 'mmdc'))
-    ? cached($, `svg\n${source}`, async () => {
-        const r = await $.process.run(['mmdc', '-i', '-', '-o', '-', '-e', 'svg', '-q', '--no-font-embed'], {
-          stdin: MMDC_INIT + source,
-          timeoutMs: 60000,
-        })
-        const svg = r.stdout.trim()
-        return r.exitCode === 0 && svg.startsWith('<svg') && svg.length <= SVG_LIMIT ? svg : ''
-      })
-    : ''
-
-// 端末は leaf、デスクトップ等は mmdc か leaf があれば図になる。mobile は描かない
+// Desktop は mermaid を自前で図にするため、端末に leaf があるときだけ md-view が描く
 async function canDraw($: EngineInterface, surfaces: readonly string[]) {
-  for (const s of surfaces) {
-    if (s === 'mobile') continue
-    if (await has($, 'leaf')) return true
-    if (s !== 'terminal' && (await has($, 'mmdc'))) return true
-  }
-  return false
+  if (surfaces.includes('desktop')) return true
+  return surfaces.includes('terminal') && (await has($, 'leaf'))
 }
 
-const INSTALL_HINT = {
-  terminal:
-    'leaf が見つからないため mermaid をソースのまま表示しています。npm install -g @rivolink/leaf などで図になります (他の入れ方は md-view の README)',
-  other:
-    'leaf / mmdc が見つからないため mermaid をソースのまま表示しています。npm install -g @mermaid-js/mermaid-cli (SVG) か @rivolink/leaf (ASCII) で図になります (他の入れ方は md-view の README)',
-}
-const hinted = new Set<string>()
+const INSTALL_HINT =
+  'leaf が見つからないため mermaid をソースのまま表示しています。npm install -g @rivolink/leaf などで図になります (他の入れ方は md-view の README)'
+let hinted = false
 
-// mermaid がソースのまま出た surface ごとに、入れ方を一度だけ知らせる
-async function hintInstall($: EngineInterface, surface: string) {
-  if (surface === 'mobile' || hinted.has(surface)) return
-  const missing = surface === 'terminal' ? !(await has($, 'leaf')) : !(await has($, 'leaf')) && !(await has($, 'mmdc'))
-  if (!missing) return
-  hinted.add(surface)
-  $.ui.toast(surface === 'terminal' ? INSTALL_HINT.terminal : INSTALL_HINT.other, { timeoutMs: 10000 })
+async function hintInstall($: EngineInterface) {
+  if (hinted || (await has($, 'leaf'))) return
+  hinted = true
+  $.ui.toast(INSTALL_HINT, { timeoutMs: 10000 })
 }
 
 // 他のコードフェンス(````markdown の例など)の中にある mermaid は図にしない
@@ -190,24 +163,16 @@ async function follow($: EngineInterface, path: string) {
 
 const open = ($: EngineInterface) => $.ui.open({ id: PANE, title: 'Markdown' })
 
-// 端末は leaf の ASCII 図、デスクトップ等は mmdc の SVG。どちらも無理ならソースのまま
+// 端末の mermaid は leaf の ASCII 図にする。端末以外は surface 自身の描画に任せてソースのまま渡す
 async function drawSegments($: EngineInterface, e: any, segments: MdSegment[], cols: number) {
-  const els = $.ui.resolve(e) as any
-  const { Box, Text, Markdown } = els
+  const { Box, Text, Markdown } = $.ui.resolve(e) as any
   const out: RenderChildren[] = []
   for (const [i, s] of segments.entries()) {
     if (s.kind === 'md') {
       out.push(<Markdown key={`s${i}`} text={s.text} />)
       continue
     }
-    if (s.kind === 'mermaid' && e.surface !== 'terminal' && els.Svg) {
-      const svg = await toSvg($, s.text)
-      if (svg) {
-        out.push(<els.Svg key={`s${i}`} source={svg} alt={s.text} />)
-        continue
-      }
-    }
-    const text = s.kind === 'pre' ? s.text : await toAscii($, s.text, cols)
+    const text = s.kind === 'pre' ? s.text : e.surface === 'terminal' ? await toAscii($, s.text, cols) : ''
     if (!text) {
       out.push(<Markdown key={`s${i}`} text={'```mermaid\n' + s.text + '```'} />)
     } else if (e.surface === 'terminal') {
@@ -273,27 +238,23 @@ export const register: Register = on => {
     return ran
   })
 
-  // Claude の返答中の mermaid を図に描き直す(保存される本文は元のまま、ctrl+o で原文)
+  // 端末の返答中の mermaid を図に描き直す(保存される本文は元のまま、ctrl+o で原文)
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const text = e.props.text
-    if (e.surface === 'mobile' || !/^(`{3,}|~{3,})mermaid/m.test(text)) return next(e)
+    if (e.surface !== 'terminal' || !/^(`{3,}|~{3,})mermaid/m.test(text)) return next(e)
     const segments = split(text)
     if (!segments.some(s => s.kind === 'mermaid')) return next(e)
-    await hintInstall($, e.surface)
+    await hintInstall($)
     const cols = Math.max(20, (e.viewport?.columns ?? 80) - 4)
-    if (e.surface === 'terminal') {
-      let out = ''
-      for (const s of segments) {
-        if (s.kind !== 'mermaid') out += s.text
-        else {
-          const ascii = await toAscii($, s.text, cols)
-          out += ascii ? '```text\n' + ascii + '\n```' : '```mermaid\n' + s.text + '```'
-        }
+    let out = ''
+    for (const s of segments) {
+      if (s.kind !== 'mermaid') out += s.text
+      else {
+        const ascii = await toAscii($, s.text, cols)
+        out += ascii ? '```text\n' + ascii + '\n```' : '```mermaid\n' + s.text + '```'
       }
-      return next({ ...e, props: { ...e.props, text: out } })
     }
-    const { Box } = $.ui.resolve(e)
-    return <Box flexDirection="column">{await drawSegments($, e, segments, cols)}</Box>
+    return next({ ...e, props: { ...e.props, text: out } })
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {

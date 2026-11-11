@@ -54,9 +54,9 @@ rebase のコンフリクトを、base 側で該当行を変更した PR と自�
 返答中の `path:line` をクリックすると、そのファイルを pane に開いて該当行までスクロールする mod (fullscreen 表示の端末のみ)。`/peek` で直近の返答の参照を一覧表示して選べる (通常表示の端末でも使える)。ファイル名だけの参照も `git ls-files` から解決する。
 → [code-peek/README.md](code-peek/README.md)
 
-### md-view (v0.1.1)
+### md-view (v0.2.0)
 
-返答中の mermaid を図で表示する mod (端末は leaf の ASCII 図、Desktop / VS Code は mermaid-cli の SVG、モバイルはソースのまま)。`/md [path]` で Markdown ファイルを pane に表示し、Claude が書いた .md に追従する。図にできる環境では mermaid を使ってよいとシステムプロンプトで伝える。leaf / mermaid-cli は任意の依存。
+端末の返答中の mermaid を leaf の ASCII 図で表示する mod (Desktop は Claude Code が自前で図にするため対象外)。`/md [path]` で Markdown ファイルを pane に表示し、Claude が書いた .md に追従する。図になる環境では mermaid を使ってよいとシステムプロンプトで伝える。leaf は任意の依存。
 → [md-view/README.md](md-view/README.md)
 
 ### remove-ai-tone (v1.0.0)
