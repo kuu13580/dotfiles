@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-11-11
+
+### Changed
+
+- 端末だけを担当する。Desktop の Claude Code タブは mermaid を自前で図にするため、端末以外の返答は書き換えない
+- システムプロンプトの一節は、端末で leaf があるときか Desktop があるときに足す
+
+### Removed
+
+- mermaid-cli (mmdc) による Desktop / VS Code 向けの SVG 描画と、その依存
+
+### Added
+
+- 動作確認用の `docs/demo.md` と、README の端末のスクリーンショット
+
 ## [0.1.1] - 2026-11-11
 
 ### Fixed

@@ -57,7 +57,7 @@
     {
       "name": "md-view",
       "source": "./plugins/md-view",
-      "description": "返答中の mermaid を図で表示し (端末は leaf の ASCII 図、Desktop は mermaid-cli の SVG)、/md で Markdown ファイルを pane に表示する mod。図にできる環境では mermaid を使ってよいとシステムプロンプトで伝える"
+      "description": "端末の返答中の mermaid を leaf の ASCII 図で表示し、/md で Markdown ファイルを pane に表示する mod。図になる環境では mermaid を使ってよいとシステムプロンプトで伝える"
     },
     {
       "name": "remove-ai-tone",
