@@ -54,18 +54,18 @@ async function has($: EngineInterface, cmd: string) {
   return ok
 }
 
-const cache = new Map<string, string>()
-async function cached(key: string, make: () => Promise<string>) {
+// ストリーミング中は同じ図の描画が重なるため実行中の変換を共有する。
+// 失敗(空文字)を残し続けると同じ図が以後ずっとソースのままになるため、30 秒で作り直す
+const cache = new Map<string, { value: Promise<string>; failedAt?: number }>()
+async function cached($: EngineInterface, key: string, make: () => Promise<string>) {
+  const now = await $.clock.now()
   const hit = cache.get(key)
-  if (hit !== undefined) return hit
-  let value = ''
-  try {
-    value = await make()
-  } catch {
-    value = ''
-  }
+  if (hit && (hit.failedAt === undefined || now - hit.failedAt < 30000)) return hit.value
   if (cache.size > 200) cache.clear()
-  cache.set(key, value)
+  const entry: { value: Promise<string>; failedAt?: number } = { value: make().catch(() => '') }
+  cache.set(key, entry)
+  const value = await entry.value
+  if (!value) entry.failedAt = await $.clock.now()
   return value
 }
 
@@ -79,12 +79,12 @@ async function leafPlain($: EngineInterface, args: { path?: string; stdin?: stri
 
 const toAscii = async ($: EngineInterface, source: string, cols: number) =>
   (await has($, 'leaf'))
-    ? cached(`ascii:${cols}\n${source}`, () => leafPlain($, { stdin: '```mermaid\n' + source + '```\n', cols }))
+    ? cached($, `ascii:${cols}\n${source}`, () => leafPlain($, { stdin: '```mermaid\n' + source + '```\n', cols }))
     : ''
 
 const toSvg = async ($: EngineInterface, source: string) =>
   (await has($, 'mmdc'))
-    ? cached(`svg\n${source}`, async () => {
+    ? cached($, `svg\n${source}`, async () => {
         const r = await $.process.run(['mmdc', '-i', '-', '-o', '-', '-e', 'svg', '-q', '--no-font-embed'], {
           stdin: MMDC_INIT + source,
           timeoutMs: 60000,
