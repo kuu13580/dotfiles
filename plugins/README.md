@@ -70,6 +70,11 @@ rebase のコンフリクトを、base 側で該当行を変更した PR と自�
 原則を NG 例・OK 例付きで見られるギャラリー: https://kuu13580.github.io/dotfiles/ui-principles/
 → [ui-principles/README.md](ui-principles/README.md)
 
+### readable-writing (v0.1.0)
+
+人が読む文章の構成と情報の並べ方の原則集 skill。PR description・README・報告・手順・設計書・長いセッション出力を書くときに発動し、目的(判断 / 把握 / 実行 / 後で引く / 理解)・読み手・読まれ方・媒体の性質を判定して、条件に合う原則だけを reference から読む。作業中の直しは聞かずに受付箱 (`~/.claude/readable-writing/inbox.md`) に候補として溜め、取り込むときにまとめて採否を決める。
+→ [readable-writing/README.md](readable-writing/README.md)
+
 ---
 
 新しいプラグインを追加したら、この一覧と `.claude-plugin/marketplace.json` に追記する。
