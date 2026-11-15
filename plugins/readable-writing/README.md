@@ -19,7 +19,7 @@
 
 | ファイル | 中身 |
 | --- | --- |
-| `SKILL.md` | 文脈の判定、優先順位、読むファイルの振り分け、受付箱の運用 |
+| `SKILL.md` | 文脈の判定、優先順位、原則の読み方、読むファイルの振り分け、受付箱の運用 |
 | `references/principles.md` | どの文章でも使う原則。ツール名を書かず単体で読める形にしている(Gemini などでも使う) |
 | `references/purpose/*.md` | 目的別の原則と、文書の種類ごとの並び順(decision / report / procedure / reference / explain) |
 | `references/conversation.md` | ターン制の対話(セッション・チャット)だけの原則 |
