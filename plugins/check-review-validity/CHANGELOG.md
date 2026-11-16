@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-11-16
+
+### Changed
+
+- 本文で指摘の対象として別の場所 (リンクや `path:line`) を示すコメント (diff 外の箇所を変更行から参照するもの) は、示された場所の今のコードを読み、置いた行の変更と結び付くかで判定する。diff ベースの判定で読めないときは `gh api` で PR の最新 commit から取得する。置いた行のファイルだけを読んで判定していたため
+
+### Fixed
+
+- ローカルのコードを読む判定 (`local_code_available`) を、ブランチ名の一致に加えて HEAD が PR の最新 commit と一致するときに限った。手元のブランチが古いと、古いコードで判定していた
+
 ## [1.0.0] - 2026-07-28
 
 ### Added

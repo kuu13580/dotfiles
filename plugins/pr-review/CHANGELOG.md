@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-11-16
+
+### Changed
+
+- diff 外の行を指す【確認】(critical / major) を、ターミナル報告ではなく pending に置くようにした。きっかけになった変更行に、1 行目 `【参照・diff外】<本当の場所の permalink>` 付きの参照コメントとして置く。この行は送るときも残し、外すのは今までどおり `・要判断/<重要度>` だけ。起点の変更行が無いものは diff で最初に現れる追加行に置く。変更に関係するのに GitHub に残らず、確認が漏れていたため
+- フェーズB で参照コメントも【確認】として返信で判定し、回答を受けてコードが変わったときは本当の場所と置いた行の両方を見る (置いた行の変更や outdated だけを根拠にしない)
+
+### Removed
+
+- 報告の最後の check-review-validity の案内と、README の比較表の check-review-validity の列。プラグイン間の依存をなくすため
+
 ## [0.6.0] - 2026-10-21
 
 ### Changed

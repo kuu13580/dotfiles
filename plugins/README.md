@@ -24,7 +24,7 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 揺らぐ事実 (ライブラリのバージョン、料金、リリース、最新動向など) が話題になったら、内部知識で即答せず WebSearch / WebFetch で一次情報を取りに行ってから回答させる skill。
 → [web-search/README.md](web-search/README.md)
 
-### check-review-validity (v1.0.0)
+### check-review-validity (v1.0.1)
 
 自分が書いた未 submit のドラフトレビュー (GitHub の Pending review) を submit 前に検証し、各指摘を ✅ 妥当 / ✏️ 要修正 / ❌ 取り下げ推奨 / ❓ 要確認 に分類して理由付きでレポートする read-only スキル。`/check-review-validity [<PR番号> | <PR URL>]`。
 → [check-review-validity/README.md](check-review-validity/README.md)
@@ -44,7 +44,7 @@ PR / commit / ブランチ / 現 worktree の変更を調査し、一枚絵で�
 rebase のコンフリクトを、base 側で該当行を変更した PR と自分のコミット・PR の文脈を読んだ上で解消する。引用できる根拠がある箇所だけ自動で解消して完了後にサマリで報告し、根拠のない箇所は承認モードにかかわらずユーザーに確認する。`/rebase-with-context [<base>]`。
 → [rebase-with-context/README.md](rebase-with-context/README.md)
 
-### pr-review (v0.6.0)
+### pr-review (v0.7.0)
 
 他人の PR をレビューする作法を通すスキル。個人指名の依頼抽出 → 不具合 / 規約 / 仕様・設計の確認事項に切り分け (規約は引用必須) → テストによる再検証 → 検証できたものだけ pending 投稿 → 修正確認 → Resolve / Approve。洗い出しの前に explain-change で解説を作り、動作確認したほうが良い箇所も報告する。submit は行わず、Approve / 返信 / Resolve は承認後にのみ実行する。`/pr-review [<PR番号> | <PR URL>] [--review | --verify] [--no-explain]`。
 → [pr-review/README.md](pr-review/README.md)
