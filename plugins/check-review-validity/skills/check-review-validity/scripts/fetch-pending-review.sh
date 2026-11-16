@@ -77,7 +77,7 @@ query($owner: String!, $name: String!, $number: Int!) {
   viewer { login }
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
-      number title url body state baseRefName headRefName
+      number title url body state baseRefName headRefName headRefOid
       author { login }
       pending: reviews(first: 5, states: PENDING) {
         nodes {
@@ -145,13 +145,15 @@ if [[ "$pending_comments" -eq 0 && -z "$pending_body" ]]; then
 fi
 
 # --- ローカルコードが判定に使えるか ---
-# 同一リポジトリかつカレントブランチが PR の head ブランチなら実ファイルを読める。
+# 同一リポジトリかつカレントブランチが PR の head ブランチで、HEAD が PR の最新 commit と一致するなら実ファイルを読める。
 # そうでなければ gh pr diff ベースの判定に落とす。
 
 head_ref=$(echo "$pr" | jq -r '.headRefName')
+head_oid=$(echo "$pr" | jq -r '.headRefOid')
+local_oid=$(git rev-parse HEAD 2>/dev/null || echo "")
 if [[ "$target_repo" == "$current_repo" ]]; then
   same_repo=true
-  if [[ -n "$current_branch" && "$current_branch" == "$head_ref" ]]; then
+  if [[ -n "$current_branch" && "$current_branch" == "$head_ref" && "$local_oid" == "$head_oid" ]]; then
     local_code_available=true
   else
     local_code_available=false
@@ -206,6 +208,7 @@ if ! output=$(jq -n \
       body: ($pr.body // ""),
       baseRefName: $pr.baseRefName,
       headRefName: $pr.headRefName,
+      headRefOid: $pr.headRefOid,
       author: ($pr.author.login // null)
     },
     pending_review: {
