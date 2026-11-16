@@ -286,7 +286,6 @@ minor: [エッジ] 0 件時の表示に空表示の分岐がない — `src/app/
 ### ✅ 投稿済み (pending): 不具合 <n> / 規約 <n>
 ### ⚪ 投稿しなかったもの: 不成立 <n> / 好み <n> / 重複 <n>
 
-→ `/check-review-validity <N>` で submit 前の最終チェックもできます
 → 引き継ぎメモ: <review_memo.path> (修正後は新しいセッションで `/pr-review <N>`)
 ```
 

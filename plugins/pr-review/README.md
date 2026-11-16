@@ -58,14 +58,14 @@
 
 ## 他スキルとの違い
 
-| 観点 | pr-review | check-review-validity | /code-review |
-| --- | --- | --- | --- |
-| 立場 | レビュアー (他人の PR) | レビュアー (submit 前のセルフ check) | — |
-| 対象 | PR 全体 → pending 投稿 → Resolve/Approve | 自分の未 submit ドラフト | 変更差分 |
-| 検証 | テストを書いて再現確認 | コード読解 + 外部事実の裏取り | なし |
-| 書き込み | pending 投稿 / Resolve / 返信 / Approve (submit 以外は承認後) | なし | `--comment` 指定時のみ |
+| 観点 | pr-review | /code-review |
+| --- | --- | --- |
+| 立場 | レビュアー (他人の PR) | — |
+| 対象 | PR 全体 → pending 投稿 → Resolve/Approve | 変更差分 |
+| 検証 | テストを書いて再現確認 | なし |
+| 書き込み | pending 投稿 / Resolve / 返信 / Approve (submit 以外は承認後) | `--comment` 指定時のみ |
 
-`pr-review` の中から `/code-review` を洗い出しに使い、submit 直前の最終チェックに `check-review-validity` を案内する、という関係。
+`pr-review` の中から `/code-review` を洗い出しに使う、という関係。
 
 ## ファイル構成
 
