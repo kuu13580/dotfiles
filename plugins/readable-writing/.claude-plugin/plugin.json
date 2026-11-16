@@ -1,6 +1,6 @@
 {
   "name": "readable-writing",
   "description": "人が読む文章の構成と情報の並べ方の原則集 skill を提供する。PR description・README・報告・手順・解説・ページ・セッションの長い出力を書くときに発動し、目的・読み手・読まれ方・媒体の性質に合う reference だけを読む。作業中の直しを受付箱に候補として溜める。",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": { "name": "m-tojo" }
 }

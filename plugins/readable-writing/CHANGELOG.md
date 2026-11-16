@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-11-17
+
+### Changed
+
+- `conversation.md`: 読み手が外部の資料を開けないチャットでは、判断に要る材料を削らず同じ返答の中で上下に分ける原則を追加(上に決めてほしいこと・重要な情報を目立たせ、下に「読まなくても選べる」裏づけ)。「出典・経緯は聞かれたら出す」は、判断に使わない部分に限定
+
 ## [1.0.0] - 2026-11-16
 
 ### Added
