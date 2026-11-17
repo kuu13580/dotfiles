@@ -37,7 +37,7 @@
     {
       "name": "prepare-context",
       "source": "./plugins/prepare-context",
-      "description": "セッションやcompactを跨いで設計判断が失われないよう、確認した事実と決定を ~/.claude/contexts/<repo>/<key>/CONTEXT.md に残し、SessionStart で自動的に読み戻す"
+      "description": "セッションやcompactを跨いで設計判断が失われないよう、確認した事実と決定を ~/.claude/contexts/<repo>/<key>/CONTEXT.md に残し、SessionStart で自動的に読み戻す。作業のあったターンで記録が古ければ Stop で追記を促す"
     },
     {
       "name": "rebase-with-context",

@@ -34,9 +34,9 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 PR / commit / ブランチ / 現 worktree の変更を調査し、一枚絵で全体像を見せてから種類別 (リファクタリング / 不具合修正 / 新機能) に要点と動作確認すると良い点を示す解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
 → [explain-change/README.md](explain-change/README.md)
 
-### prepare-context (v0.4.0)
+### prepare-context (v0.5.0)
 
-セッションや compact を跨いでも設計判断が失われないよう、確認した事実と決定を `~/.claude/contexts/<repo>/<key>/CONTEXT.md` に残し、`SessionStart` フックが (compact 後も含めて) 自動的に読み戻す。`/prepare-context <調査 | 設計 | 実装 | pr>`。
+セッションや compact を跨いでも設計判断が失われないよう、確認した事実と決定を `~/.claude/contexts/<repo>/<key>/CONTEXT.md` に残し、`SessionStart` フックが (compact 後も含めて) 自動的に読み戻す。作業のあったターンで記録が古ければ `Stop` フックが追記を促す。`/prepare-context <調査 | 設計 | 実装 | pr>`。
 → [prepare-context/README.md](prepare-context/README.md)
 
 ### rebase-with-context (v0.1.0)

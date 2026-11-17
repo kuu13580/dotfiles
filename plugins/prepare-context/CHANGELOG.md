@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-11-17
+
+### Added
+
+- **`Stop` フック (`scripts/check-record.sh`)。**作業や調べもののあったターンで `CONTEXT.md` が古いまま終わろうとすると、終了を1回だけブロックして追記を促す。セッションをいつ消しても、作業の結果が記録に残っている状態にするため
+  - 対象: ファイル編集・コミット / `WebSearch`・`WebFetch`・`Agent`・MCP ツール / ツール使用 5 回以上。ツール無しの回答や Read 1〜2回は対象外。記録そのものの読み書きは数えない
+  - 判定はコマンドのみ (transcript の最後のユーザー発言以降と `CONTEXT.md` の mtime)。`stop_hook_active` なら素通し、キー未解決なら無音
+  - 残す事実が無ければ「記録の更新なし」で終えてよいと文言で明記した
+
 ## [0.4.0] - 2026-09-29
 
 ### Fixed
