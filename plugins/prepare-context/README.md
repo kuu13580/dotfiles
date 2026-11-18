@@ -23,6 +23,53 @@
 
 読み込みに専用の入口は無い。通常は `SessionStart` が担い、途中の読み直しはスキルが拾う。
 
+## 全体の流れ
+
+記録を読む・書く・促す、の3つの場面で、誰が何をどこへ入れるか。Claude の文脈に入るのは、`SessionStart` の stdout と `Stop` の reason の2つだけ。各場面の分岐の詳細は後ろの「キーの解決」「SessionStart フックの挙動」「Stop フックの挙動」にある。
+
+```mermaid
+sequenceDiagram
+    participant U as ユーザー
+    participant M as Claude
+    participant H as フック
+    participant K as resolve-key.sh
+    participant F as CONTEXT.md
+    participant A as CONTEXT.archive.md
+
+    Note over U,A: 読む: セッション開始 (startup・resume・clear・compact)
+    H->>K: キーを解決 (load-record.sh)
+    alt キー未解決 (default branch で明示キー無し)
+        H-->>M: 何も出さない
+    else 記録なし
+        H-->>M: 書き出しを促す1行
+    else 記録あり
+        H->>F: 読む
+        H-->>M: stdout で全文を挿入<br/>64KB 超なら点検項目、compact 後なら差分確認の1行を付加
+    end
+
+    Note over U,A: 書く: /prepare-context フェーズ名、または自然言語の依頼
+    U->>M: /prepare-context 設計
+    M->>K: キーを解決
+    opt キー未解決
+        M->>U: キーを尋ね、set-key.sh で worktree に紐付けて設定
+    end
+    M->>F: 事実・決定・保留を書き出す、または追記・書き換え
+    M->>A: 撤回・置き換えた決定を移す
+
+    Note over U,A: 促す: 応答を終えようとしたとき (Stop)
+    U->>M: 発言
+    M->>M: ツール使用 (編集・調べものなど)
+    H->>H: transcript から最後のユーザー発言以降のツール使用を集計 (check-record.sh)
+    H->>F: mtime を見る
+    alt 条件に該当し、記録がそのツール使用より古い
+        H-->>M: 終了をブロックし、reason (追記の基準) を挿入
+        M->>F: スキルを呼ばず直接追記<br/>残す事実が無ければ「記録の更新なし」と述べるだけ
+        Note over H,M: 2回目の Stop は stop_hook_active で素通し
+    else 該当なし・記録が新しい・キー未解決
+        H-->>M: 何も出さない
+    end
+```
+
 ## 記録の構成
 
 `~/.claude/contexts/<repo>/<key>/` に2ファイル。
