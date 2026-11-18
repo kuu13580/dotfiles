@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-11-18
+
+### Changed
+
+- `principles.md`: 「箇条書きの1段目には名前や結論だけを置く」に、名前と説明を「:」でつないで1段目に詰めた形(「案1 割り切り: 実装は最小。〜」)は違反だと明記
+- `SKILL.md`: 手順に「書き終えて出力したあと、原則どおりか見直す」を追加
+
 ## [1.0.1] - 2026-11-17
 
 ### Changed
