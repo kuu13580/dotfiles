@@ -2,7 +2,7 @@
 
 セッションや compact を跨いでも設計判断が失われないようにするための、引き継ぎ記録の運用をプラグイン化したもの。
 
-確認した事実と決定を `~/.claude/contexts/<repo>/<key>/CONTEXT.md` に残し、`SessionStart` フックが (compact 後も含めて) 自動的に読み戻す。
+確認した事実と決定を `~/.claude/contexts/<repo>/<key>/CONTEXT.md` に残し、`SessionStart` フックが (compact 後も含めて) 自動的に読み戻す。作業や調べもののあったターンで記録が古いまま終わろうとすると、`Stop` フックが1回だけ追記を促す。
 
 ## 解決したい問題
 
@@ -23,6 +23,53 @@
 
 読み込みに専用の入口は無い。通常は `SessionStart` が担い、途中の読み直しはスキルが拾う。
 
+## 全体の流れ
+
+記録を読む・書く・促す、の3つの場面で、誰が何をどこへ入れるか。Claude の文脈に入るのは、`SessionStart` の stdout と `Stop` の reason の2つだけ。各場面の分岐の詳細は後ろの「キーの解決」「SessionStart フックの挙動」「Stop フックの挙動」にある。
+
+```mermaid
+sequenceDiagram
+    participant U as ユーザー
+    participant M as Claude
+    participant H as フック
+    participant K as resolve-key.sh
+    participant F as CONTEXT.md
+    participant A as CONTEXT.archive.md
+
+    Note over U,A: 読む: セッション開始 (startup・resume・clear・compact)
+    H->>K: キーを解決 (load-record.sh)
+    alt キー未解決 (default branch で明示キー無し)
+        H-->>M: 何も出さない
+    else 記録なし
+        H-->>M: 書き出しを促す1行
+    else 記録あり
+        H->>F: 読む
+        H-->>M: stdout で全文を挿入<br/>64KB 超なら点検項目、compact 後なら差分確認の1行を付加
+    end
+
+    Note over U,A: 書く: /prepare-context フェーズ名、または自然言語の依頼
+    U->>M: /prepare-context 設計
+    M->>K: キーを解決
+    opt キー未解決
+        M->>U: キーを尋ね、set-key.sh で worktree に紐付けて設定
+    end
+    M->>F: 事実・決定・保留を書き出す、または追記・書き換え
+    M->>A: 撤回・置き換えた決定を移す
+
+    Note over U,A: 促す: 応答を終えようとしたとき (Stop)
+    U->>M: 発言
+    M->>M: ツール使用 (編集・調べものなど)
+    H->>H: transcript から最後のユーザー発言以降のツール使用を集計 (check-record.sh)
+    H->>F: mtime を見る
+    alt 条件に該当し、記録がそのツール使用より古い
+        H-->>M: 終了をブロックし、reason (追記の基準) を挿入
+        M->>F: スキルを呼ばず直接追記<br/>残す事実が無ければ「記録の更新なし」と述べるだけ
+        Note over H,M: 2回目の Stop は stop_hook_active で素通し
+    else 該当なし・記録が新しい・キー未解決
+        H-->>M: 何も出さない
+    end
+```
+
 ## 記録の構成
 
 `~/.claude/contexts/<repo>/<key>/` に2ファイル。
@@ -34,7 +81,7 @@
 
 archive の役目は**もう真ではないものの保管**に絞っている。現役の根拠は移さない。archive は注入されないため、移した時点で後続には失われたのと同じになる。警報が出たときに移すのは撤回済みの決定が先で、それでも超える場合に限り現役の詳細も移せるが、`CONTEXT.md` 側にポインタを残す。
 
-**64KB は分量の上限ではなく警報**で、超えても何も強制されない。役目は記録が決定記録からログへ変質したことを知らせる1点だけ。このプラグインは記録の更新を明示コマンドのみに限っている (自動化を持たない) ため、これが膨張を検知する唯一の機構になる。膨張の本当のコストはトークンではなく**信号の希釈**。
+**64KB は分量の上限ではなく警報**で、超えても何も強制されない。役目は記録が決定記録からログへ変質したことを知らせる1点だけ。このプラグインは記録を自動生成しない (書くのはモデルで、フックは促すだけ) ため、これが膨張を検知する唯一の機構になる。膨張の本当のコストはトークンではなく**信号の希釈**。
 
 要約による圧縮は禁止で、選択肢は「archive へ移す」か「そのまま残す」の2つだけ。水準をきつくすると、モデルが記録を要約して根拠を落とし、このプラグインが防ごうとしている compact と同じ失敗を再生産する。判断がつかないものは残す側に倒す。
 
@@ -79,14 +126,34 @@ default branch で自動解決を拒むのは、同一リポジトリの別タ�
 | キー未解決 | 無音 (exit 0)。`main` での雑用・レビューセッションにノイズを出さない |
 | キー解決済み・記録なし | 書き出しを促す1行 |
 | キー解決済み・記録あり | `CONTEXT.md` 全文 |
-| 上記に加え警報水準 (64KB) 超過 | ログへの変質を点検させる数行 (該当が無ければそのままでよい、と明記) |
+| 上記に加え警報水準 (64KB) 超過 | ログへの変質・記述の食い違い・タスク完了を点検させる数行 (該当が無ければそのままでよい、と明記) |
 | 上記に加え `source=compact` | 「圧縮サマリと突き合わせ、記録に無い決定を追記せよ」の1行 |
 
 注入は **stdout** を使う。プラグイン同梱の `SessionStart` では `hookSpecificOutput.additionalContext` が Claude に渡らない既知の不具合があり、修正予定もない ([#16538](https://github.com/anthropics/claude-code/issues/16538) Closed as not planned)。
 
 **stdout 経由の注入はプラグイン同梱の `SessionStart` でも機能する** (v0.1.0 時点で実測)。推測不能な canary トークンを `CONTEXT.md` に仕込み、ツール使用を禁じて `claude -p` に出力させて完全一致を確認。キーが解決しないディレクトリでは注入されない negative control も通した。[#16538](https://github.com/anthropics/claude-code/issues/16538) が壊れていると報告しているのは `additionalContext` であって stdout ではない。
 
-検証は `~/.claude/skills/<name>/` へのシンボリックリンクで行える (`<name>@skills-dir` として次セッションで自動ロードされる)。marketplace を汚さず、リンク削除だけで撤収できる。
+検証は `claude -p --plugin-dir <このディレクトリ>` か、`~/.claude/skills/<name>/` へのシンボリックリンクで行える (`<name>@skills-dir` として次セッションで自動ロードされる)。どちらも marketplace を汚さない。
+
+## Stop フックの挙動
+
+目的は**セッションをいつ消しても、作業や調べものの結果が記録に残っている**状態にすること。保留のセッションを消し、後で新しいセッションから続きに入れるようにする。
+
+`scripts/check-record.sh` が transcript の「最後のユーザー発言以降のツール使用」と `CONTEXT.md` の mtime だけで判定する (LLM 判定なし)。
+
+| 状態 | 出力 |
+| --- | --- |
+| キー未解決 / `stop_hook_active` が true | 無音 (1ターン1回まで。ループさせない) |
+| ツール無しの回答 / Read を1〜2回しただけ | 無音 |
+| 下の条件のどれかに該当し、`CONTEXT.md` の mtime が該当したツール使用の最新より古い (記録が無い場合を含む) | 終了をブロックし追記を促す |
+
+- ファイル編集・コミット (`Edit` / `Write` / `NotebookEdit`、Bash の `git commit`)
+- 調べもの (`WebSearch` / `WebFetch` / `Agent` / MCP ツール)
+- ツール使用 5 回以上 (`ToolSearch` などの管理用ツールは数えない)
+
+記録そのもの (`~/.claude/contexts/` 配下) の読み書きとキー解決は数えない。Bash はコマンド文字列にこれらのパスを含む呼び出しを丸ごと外す (通常の作業と混ざっていても見分けられないため)。ブロック時の文言は SKILL.md の基準 (事実と出典・再利用できる調べ方は残す、コマンドの順番・生出力は残さない、古くなった既存の記述は書き換える) を示し、**残す事実が無ければ「記録の更新なし」で終えてよい**と明記している。強制ではなく促しに留め、記録をログで埋めさせないため。文言は発火のたびに文脈へ入るので短く保ち、基準を直接渡してスキルは呼ばせない (呼ぶと SKILL.md 全文 約 9KB が毎回読み込まれる)。
+
+判定をコマンドに限ったのは、プロンプト型 (LLM 判定) は毎回の停止で走りコストが読めないため。`SessionEnd` で終了後に書かせる案は、Agent View での削除・停止で発火するか不明なため採らなかった。
 
 ## 意図的にやらないこと
 
@@ -95,7 +162,7 @@ default branch で自動解決を拒むのは、同一リポジトリの別タ�
 | 記録の自動生成 | 信号とノイズの仕分けに LLM 判断が必要。明示コマンドで行う |
 | 指摘・事実の一般化 (`CLAUDE.md` / `.claude/rules/` への昇格) | **スコープ外。**知識ベースの蓄積であって、compact とセッションを跨いで決定を保つという目的とは別物。一般化できる事実が出てきたら、その場で `CLAUDE.md` に書けば済む |
 | `PreCompact` フック | コマンドフックは記録を書けず、出せるのは指示文のみ。それが読まれる時点で素材は圧縮済み。記録の再注入は `SessionStart` (source=`compact`) が担保する |
-| `Stop` フック | 毎回の停止で走るためコストが読めない。運用してから必要性を判断する |
+| LLM 判定の `Stop` フック (プロンプト型) | 毎回の停止で走るためコストが読めない。条件付きのコマンド型に限る |
 | `commands/` | スキルが引数を受け取れ (`/prepare-context 設計`) 自然言語でも発動するため、規約と入口を兼ねられる。入口を二重化しない |
 | リポジトリ内への記録の配置 | `.gitignore` と PR の diff を汚さない。個人の作業スタイルであってリポジトリの規約ではない |
 | 記録のリポジトリへのコミット | 同上 |
@@ -105,9 +172,10 @@ default branch で自動解決を拒むのは、同一リポジトリの別タ�
 ```
 prepare-context/
   .claude-plugin/plugin.json
-  hooks/hooks.json                                SessionStart のみ
+  hooks/hooks.json                                SessionStart / Stop
   scripts/resolve-key.sh                          キー解決 (フックとスキルの両方から呼ぶ)
   scripts/set-key.sh                              明示キーを worktree に紐付けて設定
   scripts/load-record.sh                          SessionStart 本体
+  scripts/check-record.sh                         Stop 本体 (記録が古ければ追記を促す)
   skills/prepare-context/SKILL.md                 判断基準と入口
 ```
