@@ -25,6 +25,11 @@
       "description": "内部知識ではなくWebSearch/WebFetchで最新情報を調査してから回答させる。ライブラリのバージョン、料金、リリース、最新動向など揺らぐ事実が話題になったら自動発動"
     },
     {
+      "name": "review-kit",
+      "source": "./plugins/review-kit",
+      "description": "すべてのレビューで共有する原則 (3軸の観点・確度3段の検証・3軸の議論で直すかを決める) と4スキル。self-review (自分の差分を直す) / review-response (自分の PR に来た指摘への対応と返信) / pr-review (他人の PR のレビューと修正確認) / check-review-validity (submit 前の下書きレビューの検証)。冒頭で GitHub の状態を見て合うスキルを提案する"
+    },
+    {
       "name": "check-review-validity",
       "source": "./plugins/check-review-validity",
       "description": "自分が書いた未submitのドラフトレビュー(Pending review)をsubmit前に検証し、各指摘を妥当/要修正/取り下げ推奨/要確認に分類して理由付きでレポートするread-onlyスキル"
