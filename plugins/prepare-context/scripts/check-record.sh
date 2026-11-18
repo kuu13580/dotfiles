@@ -38,7 +38,9 @@ RESULT=$(reverse "$TRANSCRIPT" | jq -nRr --arg ctx "$HOME/.claude/contexts/" --a
       else empty end ]
   | unique_by(.id)
   # 記録そのものの読み書きと、成果の残らない管理用ツールは数えない
+  # Bash は対象をコマンド文字列からしか判別できないため、記録とキー解決に触れる呼び出しはまとめて外す
   | map(select(((.input.file_path // .input.notebook_path // "") | startswith($ctx)) | not))
+  | map(select((.name == "Bash" and ((.input.command // "") | test("\\.claude/contexts/|prepare-context/scripts/"))) | not))
   | map(select(.name | test("^(ToolSearch|TodoWrite|Task(Create|Update|List|Get))$") | not))
   | (map(select((.name | test("^(Edit|MultiEdit|Write|NotebookEdit)$"))
         or (.name == "Bash" and ((.input.command // "") | test("\\bgit\\b[^;&|]*\\bcommit\\b")))))) as $edits
