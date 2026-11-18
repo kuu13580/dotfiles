@@ -9,9 +9,9 @@
 スパークラインゲージでコンテキスト使用率・レートリミット (5h / 7d)・prompt cache を Claude Code のステータスラインに表示する。Desktop app では同梱の mod がプロンプト上の band に同じ形式で表示する。PR 番号は Claude Code 標準の footer PR バッジが担当 (clickable にならない端末は `FORCE_HYPERLINK=1 claude` で起動)。
 → [sparkline-statusline/README.md](sparkline-statusline/README.md)
 
-### pr-bot-watcher (v0.2.2)
+### pr-bot-watcher (v0.3.0)
 
-GitHub PR の bot レビューコメント (Copilot / Claude / Gemini 等) を3分間隔で監視し、検出時点で cron を自己削除して修正要否を提案するワンショット型ウォッチャー。`/pr-bot-watcher [<PR番号> | stop]`。
+GitHub PR の bot レビューコメント (Copilot / Claude / Gemini 等) を3分間隔で監視し、検出時点で cron を自己削除して review-kit の review-response に対応を引き渡すワンショット型ウォッチャー。`/pr-bot-watcher [<PR番号> | stop]`。
 → [pr-bot-watcher/README.md](pr-bot-watcher/README.md)
 
 ### wt-manager (v1.10.1)

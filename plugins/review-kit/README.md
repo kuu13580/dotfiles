@@ -1,30 +1,77 @@
 # review-kit
 
-Claude が行うすべてのレビューで同じ原則を使うためのプラグイン。原則を `references/principles.md` の1か所に置き、4つのスキルがそこから読む。
+Claude が行うすべてのレビューで同じ原則を使うためのプラグイン。PR 番号を渡すだけで、レビュー・指摘への対応・自分の変更の見直しまでを同じ基準で回す。原則は `references/principles.md` の1か所に置き、4つのスキルがそこから読む。
 
-## スキル一覧
+## インストール
 
-| スキル | 使う場面 | やること | GitHub への書き込み |
-| --- | --- | --- | --- |
-| self-review | 実装の区切り (一時 commit の前、PR を出す前) | 自分の差分を洗い出し → 検証 → 議論 → その場で直す | なし |
-| review-response | 自分の PR に指摘 (人・bot) が来たとき | 指摘を検証 → 議論 → 直す → 全件の返信案 → 承認後に push・返信・再レビュー依頼 | 返信・再レビュー依頼 (人への返信は承認後) |
-| pr-review | 他人の PR のレビュー、修正確認 | 洗い出し → 検証 → 議論で決めた重さを文面に出して pending 投稿 → 修正確認・Resolve・Approve | pending 投稿は確認なし。Approve・返信・Resolve は承認後。submit はしない |
-| check-review-validity | 自分の未 submit の下書きレビューがあるとき | 下書きの各指摘を検証して ✅ / ✏️ / ❌ / ❓ に分類 | なし |
+```bash
+/plugin marketplace add kuu13580/dotfiles          # 初回だけ
+/plugin install review-kit@kuu13580-marketplace
+```
 
-4つとも自然文で呼べる (Claude が自分で起動できる)。各スキルは冒頭で `scripts/detect-state.sh` を実行してローカルと GitHub の状態を見て、別のスキルが合えば切り替えを提案する。判定表は [references/routing.md](references/routing.md)。
+入れずに試すだけなら `claude --plugin-dir <このディレクトリ>` で起動する。
 
-## 共通の原則
+## 使い方: PR 番号を渡すだけ
 
-流れは **洗い出す → 検証する → 3軸で議論する → 決める**。詳細は [references/principles.md](references/principles.md)。
+| やりたいこと | コマンド | 何が起きるか |
+| --- | --- | --- |
+| 他人の PR をレビューする | `/pr-review 123` | 変更の解説を作り、確認が要る指摘をすべて pending に置く。GitHub で pending を読み、不要なものを消して submit するだけ |
+| レビューした PR の修正を確かめる | `/pr-review 123` | 前回の指摘が直ったかを判定し、Resolve・Approve を提案する (フェーズは自動で切り替わる) |
+| 自分の PR に来た指摘に対応する | `/review-response 123` | 指摘を確かめて直し、全件の返信案を出す。承認すると push・返信・再レビュー依頼まで行う |
+| 自分の変更を見直す | `/self-review` | 見つけたものをその場で直す。実装の区切りでは Claude が自分で実行する |
+| 自分の下書きレビューを確かめる | `/check-review-validity 123` | 下書きの各指摘を ✅ 妥当 / ✏️ 要修正 / ❌ 取り下げ推奨 / ❓ 要確認 に分ける |
 
-- **観点**: 基本の3軸は固定し、変更の中身で追加観点を足す
-  - 3軸: 正しさ (ビルトイン `/code-review` に任せる) / 仕様・使う人 / 保守・構造
-  - 追加観点: セキュリティ・既存動作の変更・UI・データ移行・テスト・失敗・再実行・破壊的な挙動 (仕様どおりでも、データの上書き・外部への送信などを確認に回す)。差分のファイル種別やパスで自動で足し、引数 `+security` などでも足せる
-- **洗い出し**: 全候補に「具体的な入力・状態 → 誤った結果」を付け、半信半疑の候補も落とさない
-- **確度**: 高 (テストかコードで確定) / 中 (仕組みは実在、きっかけが不確か) / 取り下げ (否定する行を引用できたものだけ)
-- **3軸の議論**: 各軸が 直す / 直さない / 保留 を出す。一致で決定、2対1 は多数決で少数意見を報告、割れたときやデータの破損に関わるときはユーザーに委ねる
-- **規約違反**: 規約の原文と違反行を引用できたら議論にかけずに直す・投稿する。lint が拾うものは指摘しない
-- **漏れ探し**: level `max` のときだけ、検証済みリストに無いものを新しい担当が探す
+- PR 番号の代わりに URL も渡せる。省略すると、カレントブランチの PR や自分宛のレビュー依頼から選ぶ
+- 「PR #123 をレビューして」のような自然文でも動く
+- どのスキルを呼んでも、最初にローカルと GitHub の状態を見て、別のスキルが合えば切り替えを提案する ([references/routing.md](references/routing.md))
+- 深さや観点は引数で足せる: `/pr-review 123 max` (漏れ探しまで行う)、`/self-review +security` (追加観点を指定)。pr-review の引数の詳細は [skills/pr-review/SKILL.md](skills/pr-review/SKILL.md)
+
+### GitHub への書き込み
+
+| スキル | 書き込み |
+| --- | --- |
+| pr-review | pending への投稿は確認なし。Approve・返信・Resolve は承認後。submit はしない |
+| review-response | 返信・再レビュー依頼は、返信案と push の承認後 |
+| self-review / check-review-validity | なし |
+
+## レビューの観点と流れ
+
+基本の3軸は常に見て、差分の中身に応じて追加観点を足す。どの観点で見つけたものも、検証してから3軸で議論して決める。
+
+```mermaid
+flowchart TD
+  D[差分] --> base
+  D -. 条件に当たったときだけ .-> extra
+  D -. 保存・削除・同期・送信・決済・権限 .-> X["破壊的な挙動"]
+  subgraph base["基本の3軸 (常に見る)"]
+    direction LR
+    C["正しさ<br>ビルトイン /code-review"]
+    S["仕様・使う人<br>妥当性・要件・エッジ・アーキ"]
+    M["保守・構造<br>再利用・簡素化・規約"]
+  end
+  subgraph extra["追加観点"]
+    direction LR
+    SEC["セキュリティ<br>認証・暗号・外部入力"]
+    BEH["既存動作の変更<br>公開 API・既定値"]
+    UI["UI<br>html・tsx・css"]
+    MIG["データ移行<br>スキーマ・SQL"]
+    T["テスト<br>テストの欠け"]
+    F["失敗・再実行<br>外部 API・git・状態"]
+  end
+  base --> V["検証<br>テスト → コードを追う → 動かして確かめる<br>→ 高 / 中 / 取り下げ"]
+  extra --> V
+  V --> G["3軸で議論<br>各軸が 直す / 直さない / 保留"]
+  G --> R1["self-review・review-response<br>直す"]
+  G --> R2["pr-review<br>重さを文面に出して pending へ"]
+  X --> Q["議論にかけず確認に回す<br>(3件まで)"]
+```
+
+- 追加観点は、差分のファイル種別・パス・内容が条件に当たったときだけ足す (引数 `+security` などでも足せる)。条件の全文は [references/principles.md](references/principles.md) の §1
+- 正しさは、差分の大半が指示文・設定のときはビルトインの代わりにサブエージェントが見る
+- 確度: 高 (テスト・コード・実際の動作で確定) / 中 (仕組みは実在するが、きっかけが不確か) / 取り下げ (否定する行を引用できたものだけ)
+- 3軸の議論: 一致で決定、2対1 は多数決で少数意見を報告、割れたときやデータの破損に関わるときはユーザーに委ねる
+- 規約違反は、規約の原文と違反行を引用できたら議論にかけずに直す・投稿する。lint が拾うものは指摘しない
+- 詳細は [references/principles.md](references/principles.md)
 
 ## トークン量の計測
 
@@ -36,19 +83,6 @@ column -t -s $'\t' ~/.claude/review-kit/usage.tsv         # これまでの記�
 ```
 
 1回の範囲は、スキルを呼んだ時点から次に review-kit のスキルを呼ぶまで。review-response の中で呼ぶ self-review は別の回として出る。
-
-## 使い方
-
-```bash
-/self-review                       # 未コミットの変更 (無ければブランチ全体) を見直して直す
-/self-review high +security        # level と追加観点を指定
-/review-response                   # カレントブランチの PR に来た指摘に対応
-/pr-review                         # 自分宛のレビュー依頼一覧から選ぶ
-/pr-review 123 max                 # level max (漏れ探しあり) でレビュー
-/check-review-validity 123         # PR #123 の下書きレビューを検証
-```
-
-pr-review の引数 (`--review` / `--verify` / `--no-explain`) とフェーズの詳細は [skills/pr-review/SKILL.md](skills/pr-review/SKILL.md)。
 
 ## 前提条件
 
@@ -83,4 +117,4 @@ review-kit/
 
 `pr-review` (v0.7.0) と `check-review-validity` (v1.0.1) はこのプラグインに移した。移した時点での変更点は [CHANGELOG.md](CHANGELOG.md)。
 
-旧プラグインは、review-kit へ案内するだけのプラグインとして marketplace に残している。今までどおり `/pr-review` などで呼ぶと、review-kit が入っていればそちらに引き継ぎ、入っていなければ入れ方を案内する。移行は `/plugin install review-kit@kuu13580-marketplace` のあと、`/plugin uninstall pr-review@kuu13580-marketplace` などで旧プラグインを外す。
+旧プラグインは、review-kit へ案内するだけのプラグインとして marketplace に残している。今までどおり `/pr-review` などで呼ぶと、review-kit が入っていればそちらに引き継ぎ、入っていなければ入れ方を案内する。移行は `/plugin marketplace update kuu13580-marketplace` → `/plugin install review-kit@kuu13580-marketplace` → `/review-kit:pr-review` などで動くことを確かめる → `/plugin uninstall pr-review@kuu13580-marketplace` などで旧プラグインを外す、の順に行う。
