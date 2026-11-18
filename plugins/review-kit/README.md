@@ -82,3 +82,5 @@ review-kit/
 ## 旧プラグインからの移行
 
 `pr-review` (v0.7.0) と `check-review-validity` (v1.0.1) はこのプラグインに移した。移した時点での変更点は [CHANGELOG.md](CHANGELOG.md)。
+
+旧プラグインは、review-kit へ案内するだけのプラグインとして marketplace に残している。今までどおり `/pr-review` などで呼ぶと、review-kit が入っていればそちらに引き継ぎ、入っていなければ入れ方を案内する。移行は `/plugin install review-kit@kuu13580-marketplace` のあと、`/plugin uninstall pr-review@kuu13580-marketplace` などで旧プラグインを外す。

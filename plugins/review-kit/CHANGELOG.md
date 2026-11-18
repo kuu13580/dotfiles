@@ -31,3 +31,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `reply-thread.sh` を pr-review と review-response で共有するため、プラグイン直下の `scripts/` に移した
+- 旧 `pr-review` (0.8.0)・`check-review-validity` (2.0.0) は、review-kit へ案内するだけのプラグインとして残した。`/pr-review` などで呼ぶと、review-kit が入っていればそちらに引き継ぐ

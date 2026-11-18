@@ -30,9 +30,14 @@
       "description": "すべてのレビューで共有する原則 (3軸の観点・確度3段の検証・3軸の議論で直すかを決める) と4スキル。self-review (自分の差分を直す) / review-response (自分の PR に来た指摘への対応と返信) / pr-review (他人の PR のレビューと修正確認) / check-review-validity (submit 前の下書きレビューの検証)。冒頭で GitHub の状態を見て合うスキルを提案する"
     },
     {
+      "name": "pr-review",
+      "source": "./plugins/pr-review",
+      "description": "pr-review は review-kit に移設済み。/pr-review で呼ばれたときに review-kit の pr-review へ引き継ぐか、review-kit の導入を案内する"
+    },
+    {
       "name": "check-review-validity",
       "source": "./plugins/check-review-validity",
-      "description": "自分が書いた未submitのドラフトレビュー(Pending review)をsubmit前に検証し、各指摘を妥当/要修正/取り下げ推奨/要確認に分類して理由付きでレポートするread-onlyスキル"
+      "description": "check-review-validity は review-kit に移設済み。/check-review-validity で呼ばれたときに review-kit の check-review-validity へ引き継ぐか、review-kit の導入を案内する"
     },
     {
       "name": "explain-change",
@@ -48,11 +53,6 @@
       "name": "rebase-with-context",
       "source": "./plugins/rebase-with-context",
       "description": "rebaseのコンフリクトを、両側のPR・コミットの文脈を読んだ上で解消する。引用できる根拠がある箇所だけ自動で解消して完了後にサマリで報告し、根拠のない箇所は承認モードにかかわらずユーザーに確認する"
-    },
-    {
-      "name": "pr-review",
-      "source": "./plugins/pr-review",
-      "description": "他人のPRレビューの作法を通すスキル。個人指名の依頼抽出、不具合/規約/仕様・設計の確認事項の切り分け(規約は引用必須)、テストによる再検証、検証できたものだけのpendingコメント投稿、修正後のResolve/Approveまで。submit/Approve/返信は承認後にのみ実行"
     },
     {
       "name": "code-peek",

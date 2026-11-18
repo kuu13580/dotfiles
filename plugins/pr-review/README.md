@@ -1,98 +1,21 @@
 # pr-review
 
-他人の PR をレビューする一連の作法を 1 コマンドにしたスキル。**指摘を出す (フェーズA)** と **修正を確認して閉じる (フェーズB)** を、PR の状態から自動で判定して切り替える。
+pr-review は [review-kit](../review-kit/README.md) プラグインに移した。このプラグインは、今までどおり `/pr-review` で呼ばれたときに review-kit へ案内するためだけに残している。
 
-レビューの本当のコストは、実装者が「それは違います」と返すために使う時間。このスキルは量ではなく **裏が取れているか** で投稿を決める。
+## 呼んだときの動き
 
-## 特徴
+| review-kit | 動き |
+| --- | --- |
+| 入っている | 移設と今後のコマンド (`/review-kit:pr-review`) を1行伝え、引数をそのまま渡して `review-kit:pr-review` に引き継ぐ |
+| 入っていない | review-kit の入れ方と、このプラグインの外し方を伝えて終わる |
 
-- **個人指名だけ拾う**: `review-requested:@me` はチーム経由の依頼も返すため、`reviewRequests` の User 一致でフィルタする
-- **不具合と規約を分ける**: 規約ファイルの行を **引用できれば【規約】**、できなければ【不具合】。引用できない好みは投稿しない
-- **仕様・設計の確認事項を別枠で出す**: `[妥当性]` コードから読める仕様を決めてよいのか / `[要件担保]` 書かれた重要要件が実装で閉じているか / `[エッジ]` 仕様にも実装にも扱いがない入力・状態 / `[アーキ]` 責務の置き場所。**実装者に聞かないと決まらないこと**を探す観点で、各件に critical / major / minor の重要度 (前提が間違っていたときの被害) を付け、「実装: X のとき Y する / 判断: Yes/No の問い」で書く。critical / major (最大10件) は `【確認・要判断/<重要度>】` の目印付きで pending に置き、ユーザーが GitHub 上でコードと並べて削除 / 目印を外して送るを決める。diff 外の行を指すものは、きっかけになった変更行に `【参照・diff外】<本当の場所のリンク>` を添えた参照コメントとして置く。minor (最大5件) はターミナルに1行で出す
-- **検証したものだけ投稿**: テストで再現 → 成立 / 不成立、実機確認が要るものは手順を用意。3 つを混ぜず別枠で報告する
-- **先に理解できる**: 洗い出しの前に `explain-change` で変更の解説 Artifact を作る (既定。`--no-explain` で省略)。一枚絵で影響範囲を示し、PR の説明とコードの食い違いは【確認】の候補にする。explain-change が無い環境では要点 5 行だけを出す
-- **動作確認したほうが良い箇所を出す**: explain-change が挙げた動作確認の点 (リファクタリングで挙動が変わる・未確認の箇所を含む) と、実機でしか確かめられない不具合の疑いを、手順付きの 1 つの一覧にまとめる。結果をもらえれば、不具合は投稿に加え、仕様の判断が要るものは【確認】に回す
-- **修正確認を安く始められる**: フェーズA の最後に、各指摘の根拠・検証に使ったテスト・閉じる条件だけを引き継ぎメモ (`~/.claude/pr-review/<owner>/<repo>/<N>.md`) に残す。フェーズB は新しいセッションでもメモから始めるので、PR の理解を作り直さない。MERGED / CLOSED / 自分が Approve 済みの PR のメモは実行のたびに自動で削除する
-- **pending は無確認、submit はしない**: pending review は本人にしか見えないので投稿は確認不要。submit / Approve / Resolve / 返信は必ず承認を得てから
-- **行番号の事前検証**: GitHub は diff に無い行へのコメントを 422 で弾き 1 件でも不正だと全件落ちるため、投稿前に diff と突き合わせて除外する
-
-## 使い方
+## 移行
 
 ```bash
-/pr-review                  # 自分宛のレビュー依頼一覧から選ぶ
-/pr-review 123              # 状態を見てフェーズ A / B に自動分岐
-/pr-review 123 --review     # レビュー作成を強制
-/pr-review 123 --verify     # 修正確認を強制
-/pr-review 123 --no-explain # 変更の解説 Artifact を作らない
-/pr-review 123 max          # /code-review の effort level を指定 (既定 high)
-/pr-review https://github.com/owner/repo/pull/123
+/plugin marketplace update kuu13580-marketplace
+/plugin install review-kit@kuu13580-marketplace
+/review-kit:pr-review                                  # 動くことを確かめる
+/plugin uninstall pr-review@kuu13580-marketplace
 ```
 
-## 前提条件
-
-- `gh` CLI がインストール済みかつ認証済み (`gh auth login`)
-- `jq` / `python3` がインストール済み
-- 検証にテストを書くため、対象 PR のブランチをチェックアウトできる状態 (未コミット変更があれば停止して相談する)
-
-## フロー
-
-### フェーズA — レビューを作る
-
-0. `explain-change` で変更の解説 Artifact を作る (`--no-explain` で省略)
-1. `/code-review <level> <PR>` / 規約パス / 仕様・設計パス の 3 系統を並行で走らせる
-2. 既存スレッドと突き合わせて重複を除く
-3. 【規約】(引用できる) /【不具合】(壊れる経路がある) /【確認】(仕様・設計の判断が要る) に分類、どれでもないものは落とす
-   - 壊れる経路を示せず規約も引用できないが仕様として引っかかるものは、落とさず【確認】に移す
-4. 【不具合】はテストを書いて再現確認 → 確認後にテストファイルを削除。再現できないものは手順を用意
-5. 検証できたもの + 【確認・要判断】(critical / major) を pending コメントとして投稿 (レビュー本文は空のまま)
-6. 引き継ぎメモを保存
-7. 判断が要る【確認・要判断】の場所一覧を先頭に報告し、動作確認してほしい箇所を手順付きで出す (投稿分と落とした指摘は件数のみ、場所はリポジトリ相対の `path:line`)
-
-### フェーズB — 修正を確認して閉じる
-
-1. 自分のスレッドと前回レビュー以降の差分を取得し、引き継ぎメモがあれば読む (正は GitHub のスレッド。submit 前に消した・足した指摘はそちらに従う)
-2. 各指摘を ✅対応済 / ⚠不十分 / ❌未対応 / 💬議論中 に判定 (メモの閉じる条件で判定、根拠は commit か行番号で示す)
-3. 追加 commit の差分だけをフェーズA と同じ基準で再レビュー (前回投稿しないと決めたものは蒸し返さない)
-4. 表で報告 → 承認を得て Resolve → 返信 → 全件解消なら Approve
-5. メモを現状に更新。Approve まで済んだらメモを削除
-
-## 他スキルとの違い
-
-| 観点 | pr-review | /code-review |
-| --- | --- | --- |
-| 立場 | レビュアー (他人の PR) | — |
-| 対象 | PR 全体 → pending 投稿 → Resolve/Approve | 変更差分 |
-| 検証 | テストを書いて再現確認 | なし |
-| 書き込み | pending 投稿 / Resolve / 返信 / Approve (submit 以外は承認後) | `--comment` 指定時のみ |
-
-`pr-review` の中から `/code-review` を洗い出しに使う、という関係。
-
-## ファイル構成
-
-```
-pr-review/
-├── .claude-plugin/plugin.json
-├── skills/pr-review/
-│   ├── SKILL.md                      # 共通ルール・引数・フェーズ判定
-│   ├── references/
-│   │   ├── review.md                 # フェーズA の手順
-│   │   └── verify.md                 # フェーズB の手順
-│   └── scripts/
-│       ├── prune-review-memos.sh     # 役目を終えた引き継ぎメモを削除
-│       ├── list-review-prs.sh        # 個人指名の依頼 + 修正確認待ちを 2 バケツで出す
-│       ├── fetch-pr-context.sh       # PR メタ / 既存スレッド / ローカル状態 / 規約ファイル候補
-│       ├── post-pending-review.sh    # 行番号を diff で検証してから pending 投稿
-│       ├── fetch-review-threads.sh   # 自分のスレッド + 前回レビュー以降の commit
-│       ├── resolve-threads.sh        # スレッドを Resolve
-│       └── reply-thread.sh           # スレッドに返信
-├── CHANGELOG.md
-└── README.md
-```
-
-## 制約
-
-- GitHub 仕様上、1 ユーザーが 1 PR に持てる pending review は 1 つだけ。既存のドラフトがあると投稿できないので、破棄してから実行する
-- `submit` (REQUEST_CHANGES 含む) はこのスキルでは行わない。GitHub UI でユーザーが押す
-- `git stash` / `git checkout -- .` / `git clean` は実行しない。未コミット変更があれば停止して相談する
-- 別リポジトリの PR を URL で指定した場合、clone が手元になければ diff ベースの精度限定モードになりテスト検証はできない
-- 引き継ぎメモはローカルにだけ置く。別の端末で修正確認する場合はメモ無しで (スレッドと差分から) 判定する
+pr-review の機能と移設時の変更点は [review-kit の README](../review-kit/README.md) と [CHANGELOG](../review-kit/CHANGELOG.md) を参照。

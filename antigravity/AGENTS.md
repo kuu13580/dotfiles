@@ -24,7 +24,7 @@
 ### 環境変数 `${CLAUDE_PLUGIN_ROOT}` のパス解決
 スキル内のスクリプト実行コマンドに含まれる `${CLAUDE_PLUGIN_ROOT}` は、該当プラグインのルートディレクトリパス（dotfiles 配下の `plugins/<プラグイン名>`、通常は `~/dotfiles/plugins/<プラグイン名>`）として展開して実行すること。
 - 例: `${CLAUDE_PLUGIN_ROOT}/skills/check-review-validity/scripts/fetch-pending-review.sh`
-  → `~/dotfiles/plugins/check-review-validity/skills/check-review-validity/scripts/fetch-pending-review.sh`
+  → `~/dotfiles/plugins/review-kit/skills/check-review-validity/scripts/fetch-pending-review.sh`
 
 ### 成果物 (Artifact) の出力
 成果物を Artifact として出力する指示（`explain-change` スキル等）がある場合は、Antigravity の Artifact ディレクトリ（`<appDataDir>/brain/<conversation-id>/`）に出力し、ユーザーが閲覧できるようにリンクを提示すること。
