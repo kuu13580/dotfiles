@@ -88,7 +88,8 @@ column -t -s $'\t' ~/.claude/review-kit/usage.tsv         # これまでの記�
 
 - `gh` CLI がインストール済みかつ認証済み (`gh auth login`)
 - `jq` / `python3` / `git` がインストール済み
-- 任意: `explain-change` (pr-review が変更の解説に使う)、`ui-principles` (UI の追加観点で使う)、`readable-writing` (報告に使う)。無ければその部分を省いて進む
+- 推奨: `explain-change` (pr-review が変更の解説ページを作るのに使う)。無くても動くが、解説は 5 行の要点だけになり、報告で入れ方を案内する
+- 任意: `ui-principles` (UI の追加観点で使う)、`readable-writing` (報告に使う)。無ければその部分を省いて進む
 
 ## ファイル構成
 

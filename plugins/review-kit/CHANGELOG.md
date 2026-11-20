@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-11-20
+
+### Changed
+
+- pr-review: explain-change が入っていないときは、解説ページを作れなかったことと入れ方 (`/plugin install explain-change@<marketplace>`) を報告で案内する。`--no-explain` で省いたときは案内しない
+
 ## [0.1.0] - 2026-11-18
 
 ### Added

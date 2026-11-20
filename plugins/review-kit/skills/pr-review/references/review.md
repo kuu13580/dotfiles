@@ -13,7 +13,11 @@
 - 動作確認すると良い点、リファクタリングで `変わる` / `未確認` と判定された箇所 → 影響が major 以上なら A-5 の動作確認として pending に置く。それ以外は A-7 のメモと A-8 の控え
 - PR の説明とコードの食い違い → A-3 の【確認】の候補
 
-`explain-change` がインストールされていない (Skill ツールで呼べない) ときは、「explain-change が無いため、解説は作っていません」と伝え、変更の要点をターミナルに 5 行以内で出して進む。Artifact を作るために別の仕組みを立てない。`--no-explain` のときも要点 5 行だけを出す。
+`explain-change` がインストールされていない (Skill ツールで呼べない) ときは、変更の要点をターミナルに 5 行以内で出して進む。Artifact を作るために別の仕組みを立てない。A-8 の報告の「解説:」の行で、解説を作らなかったことと入れ方を案内する:
+
+> explain-change が入っていないため、解説ページは作っていません。入れると、全体像の図と動作確認すると良い点が付いた解説ページを作り、動作確認の候補もレビューに使えます → `/plugin install explain-change@<marketplace>`
+
+`<marketplace>` は review-kit を入れた marketplace の名前で、`${CLAUDE_PLUGIN_ROOT}` (`~/.claude/plugins/cache/<marketplace>/review-kit/<version>`) から取る。取れなければ `@<marketplace>` を省く。`--no-explain` のときは要点 5 行だけを出し、案内はしない (自分で省いたため)。
 
 ## A-1. 洗い出す (3軸 + 追加観点を並行で)
 
