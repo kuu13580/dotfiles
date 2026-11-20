@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-11-20
+
+### Changed
+
+- **Stop フックでブロックしたあとの返答を、短い1文 (「記録を更新しました (回答は上のメッセージ)」) に限定した。**追記後に回答を再掲すると、本来知りたい回答が上に押し上げられる。要約・再掲はしない
+
 ## [0.5.0] - 2026-11-17
 
 ### Added
