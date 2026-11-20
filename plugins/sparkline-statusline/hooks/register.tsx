@@ -11,7 +11,10 @@ const cache = atom({ plugin: 'sparkline-statusline', key: 'cache' } as const, EM
 const SPARKS = ' ▁▂▃▄▅▆▇█'
 const CIRCLES = '○◔◑◕●'
 const GREEN = '#00c850'
+const RED = '#ff003c'
 const TTL_MS = { '5m': 5 * 60_000, '1h': 60 * 60_000 }
+const WEEK_MS = 7 * 24 * 60 * 60_000
+const PACE_THRESHOLD = 5
 
 export const gradient = (pct: number): string => {
   const hex = (n: number) => Math.max(0, Math.min(255, Math.trunc(n))).toString(16).padStart(2, '0')
@@ -33,6 +36,13 @@ export const sparkGauge = (pct: number, width = 8): string => {
 
 export const circle = (pct: number): string =>
   CIRCLES[Math.min(Math.trunc(Math.min(Math.max(pct, 0), 100) / 25 + 0.5), 4)] ?? CIRCLES[0]!
+
+export const paceDiff = (used: number, resetsAtMs: number, nowMs: number): number => {
+  const elapsed = Math.min(Math.max(1 - (resetsAtMs - nowMs) / WEEK_MS, 0), 1) * 100
+  return Math.round(used - elapsed)
+}
+
+export const paceText = (diff: number): string => (diff > 0 ? `▲+${diff}pt` : diff < 0 ? `▼${diff}pt` : '±0pt')
 
 const hhmm = (ms: number): string => {
   const d = new Date(ms)
@@ -115,7 +125,15 @@ export const register: Register = on => {
         const reset: Piece[] = five.resetsAt ? [{ text: ` (reset ${hhmm(Date.parse(five.resetsAt))})`, dim: true }] : []
         list.push([...gauge('5h', five.percentUsed, compact), ...reset])
       }
-      if (week) list.push(gauge('7d', week.percentUsed, compact))
+      if (week) {
+        const pace: Piece[] = []
+        if (week.resetsAt) {
+          const diff = paceDiff(week.percentUsed, Date.parse(week.resetsAt), now)
+          const color = diff > PACE_THRESHOLD ? RED : diff < -PACE_THRESHOLD ? GREEN : undefined
+          pace.push({ text: ' ' }, { text: paceText(diff), color })
+        }
+        list.push([...gauge('7d', week.percentUsed, compact), ...pace])
+      }
       if (c.ttl && c.lastResponseAt !== null) {
         const expiresAt = c.lastResponseAt + TTL_MS[c.ttl]
         list.push(

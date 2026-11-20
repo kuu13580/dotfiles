@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-20
+
+### Added
+
+- 7d の使用率の後ろに使用ペースを表示。使用率と 7 日枠の経過率の差を `▲+8pt` / `▼-12pt` で出し、+5pt 超を赤、−5pt 未満を緑にする (`resets_at` が取れない場合は出さない)
+
 ## [1.3.2] - 2026-10-06
 
 ### Fixed
