@@ -1,0 +1,6 @@
+{
+  "name": "review-kit",
+  "description": "Claude が行うすべてのレビューで共有する原則 (3軸の観点・確度3段の検証・3軸の議論で直すかを決める) と、それを使う4スキル (self-review / review-response / pr-review / check-review-validity) をまとめたプラグイン。各スキルは冒頭で GitHub の状態を見て、合うスキルへの切り替えを提案する。",
+  "version": "0.1.0",
+  "author": { "name": "m-tojo" }
+}

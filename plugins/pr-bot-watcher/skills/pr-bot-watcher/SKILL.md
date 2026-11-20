@@ -1,6 +1,6 @@
 ---
 name: pr-bot-watcher
-description: "GitHub PRに付いたbotレビューコメント(Copilot/Claude/Gemini等)を3分間隔で監視するワンショット型スキル。コメント検出時点でcronを自己削除しユーザーに修正要否を確認する。引数でPR番号指定、省略時は会話ログ参照かアサインPR。stopで停止。"
+description: "GitHub PRに付いたbotレビューコメント(Copilot/Claude/Gemini等)を3分間隔で監視するワンショット型スキル。コメント検出時点でcronを自己削除し、review-kit の review-response に対応を引き渡す。引数でPR番号指定、省略時は会話ログ参照かアサインPR。stopで停止。"
 argument-hint: "[<PR番号> | start | stop]"
 allowed-tools: Bash, Read, AskUserQuestion, CronCreate, CronList, CronDelete
 disable-model-invocation: true
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # PR Bot Watcher
 
-GitHub PRのbotレビューコメント(Copilot, Claude, Gemini等)を**3分間隔**で監視し、**コメント検出時点でcronを自己削除**する**ワンショット型**スキル。検出後はユーザーに修正要否サマリを提示し、選択されたコメントを修正してcommit/pushする。
+GitHub PRのbotレビューコメント(Copilot, Claude, Gemini等)を**3分間隔**で監視し、**コメント検出時点でcronを自己削除**する**ワンショット型**スキル。検出後は review-kit プラグインの `review-response` に引き渡し、指摘の検証・修正・返信はそちらで行う。
 
 ## 引数パース
 
@@ -132,5 +132,5 @@ CronList を呼び出し、プロンプトに `[pr-bot-watcher-cron]` を含む�
 ## 設計上の注意
 
 - **ワンショットモデル**: 検出時点で cron は自己削除される。継続監視が必要な場合は `review-fixer` プラグインを利用すること。
-- **修正フローは cron 側で定義**: この SKILL.md は「起動・停止」のみを担当し、検出後の修正判定・Ask・修正・push は `references/cron-prompt.md` に記述されている。
+- **検出後は review-response に引き渡す**: この SKILL.md は「起動・停止」のみを担当する。検出後の手順 (ブランチ切替・引き渡し・元ブランチへの復帰) は `references/cron-prompt.md` に、指摘への対応そのものは review-kit の `review-response` にある。review-kit が無いときは検出結果を伝えて終わる
 - **3分間隔の負荷**: 毎回 `gh api` を叩くため、7日で最大 3,360 回のAPI呼び出しになる (実際は検出時点で停止)。

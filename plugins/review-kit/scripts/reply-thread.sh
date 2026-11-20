@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # reply-thread.sh
-# pr-review 用: レビュースレッドに返信する (文面をユーザーが承認した後にのみ実行すること)
+# review-kit 用 (pr-review / review-response): レビュースレッドに返信する (人への返信は文面をユーザーが承認した後にのみ実行すること)
 # Usage: bash reply-thread.sh <PR番号|PR URL> <返信先コメントのdatabaseId> <本文ファイル>
 set -euo pipefail
 
@@ -11,7 +11,7 @@ target="${1:-}"; comment_id="${2:-}"; body_file="${3:-}"
 
 if [[ "$target" =~ ^[0-9]+$ ]]; then
   repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner); number="$target"
-elif [[ "$target" =~ ^https?://[^/]+/([^/]+)/([^/]+)/pull/([0-9]+) ]]; then
+elif [[ "$target" =~ ^https?://github\.com/([^/]+)/([^/]+)/pull/([0-9]+) ]]; then
   repo="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"; number="${BASH_REMATCH[3]}"
 else
   echo "引数の形式が不正です: '$target'" >&2; exit 1

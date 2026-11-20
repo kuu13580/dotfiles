@@ -9,9 +9,9 @@
 スパークラインゲージでコンテキスト使用率・レートリミット (5h / 7d、7d は使用ペース付き)・prompt cache を Claude Code のステータスラインに表示する。Desktop app では同梱の mod がプロンプト上の band に同じ形式で表示する。PR 番号は Claude Code 標準の footer PR バッジが担当 (clickable にならない端末は `FORCE_HYPERLINK=1 claude` で起動)。
 → [sparkline-statusline/README.md](sparkline-statusline/README.md)
 
-### pr-bot-watcher (v0.2.2)
+### pr-bot-watcher (v0.3.0)
 
-GitHub PR の bot レビューコメント (Copilot / Claude / Gemini 等) を3分間隔で監視し、検出時点で cron を自己削除して修正要否を提案するワンショット型ウォッチャー。`/pr-bot-watcher [<PR番号> | stop]`。
+GitHub PR の bot レビューコメント (Copilot / Claude / Gemini 等) を3分間隔で監視し、検出時点で cron を自己削除して review-kit の review-response に対応を引き渡すワンショット型ウォッチャー。`/pr-bot-watcher [<PR番号> | stop]`。
 → [pr-bot-watcher/README.md](pr-bot-watcher/README.md)
 
 ### wt-manager (v1.10.1)
@@ -24,10 +24,15 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 揺らぐ事実 (ライブラリのバージョン、料金、リリース、最新動向など) が話題になったら、内部知識で即答せず WebSearch / WebFetch で一次情報を取りに行ってから回答させる skill。
 → [web-search/README.md](web-search/README.md)
 
-### check-review-validity (v1.0.1)
+### review-kit (v0.1.0)
 
-自分が書いた未 submit のドラフトレビュー (GitHub の Pending review) を submit 前に検証し、各指摘を ✅ 妥当 / ✏️ 要修正 / ❌ 取り下げ推奨 / ❓ 要確認 に分類して理由付きでレポートする read-only スキル。`/check-review-validity [<PR番号> | <PR URL>]`。
-→ [check-review-validity/README.md](check-review-validity/README.md)
+Claude が行うすべてのレビューで共有する原則 (3軸の観点・確度3段の検証・3軸の議論で直すかを決める) と、それを使う4スキル。self-review (実装の区切りで自分の差分を見直して直す) / review-response (自分の PR に来た指摘を検証して直し、返信案 → 承認後に push・返信・再レビュー依頼) / pr-review (他人の PR のレビューと修正確認) / check-review-validity (submit 前の下書きレビューの検証)。4つとも自然文で呼べ、冒頭で GitHub の状態を見て合うスキルへの切り替えを提案する。
+→ [review-kit/README.md](review-kit/README.md)
+
+### pr-review (v0.8.0) / check-review-validity (v2.0.0)
+
+review-kit に移設済み。今までどおり `/pr-review`・`/check-review-validity` で呼ぶと、review-kit が入っていればそちらに引き継ぎ、入っていなければ review-kit の入れ方を案内する。
+→ [pr-review/README.md](pr-review/README.md) / [check-review-validity/README.md](check-review-validity/README.md)
 
 ### explain-change (v1.1.0)
 
@@ -43,11 +48,6 @@ PR / commit / ブランチ / 現 worktree の変更を調査し、一枚絵で�
 
 rebase のコンフリクトを、base 側で該当行を変更した PR と自分のコミット・PR の文脈を読んだ上で解消する。引用できる根拠がある箇所だけ自動で解消して完了後にサマリで報告し、根拠のない箇所は承認モードにかかわらずユーザーに確認する。`/rebase-with-context [<base>]`。
 → [rebase-with-context/README.md](rebase-with-context/README.md)
-
-### pr-review (v0.7.0)
-
-他人の PR をレビューする作法を通すスキル。個人指名の依頼抽出 → 不具合 / 規約 / 仕様・設計の確認事項に切り分け (規約は引用必須) → テストによる再検証 → 検証できたものだけ pending 投稿 → 修正確認 → Resolve / Approve。洗い出しの前に explain-change で解説を作り、動作確認したほうが良い箇所も報告する。submit は行わず、Approve / 返信 / Resolve は承認後にのみ実行する。`/pr-review [<PR番号> | <PR URL>] [--review | --verify] [--no-explain]`。
-→ [pr-review/README.md](pr-review/README.md)
 
 ### code-peek (v0.2.0)
 

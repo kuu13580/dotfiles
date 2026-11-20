@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-18
+
+### Changed
+
+- 検出後の対応 (修正要否の判定・修正・commit/push・返信) を、review-kit の `review-response` への引き渡しに置き換えた。指摘への対応の基準をレビュー全体の原則にそろえ、同じ bot コメントを2つの流れで二重に処理しないため
+  - cron 側は PR のブランチへの切替、`review-response` の呼び出し、元ブランチへの復帰だけを行う
+  - 対象は検出した PR の未解決の指摘全体になる (人の指摘を含む。人への返信は review-response が承認を取る)
+  - review-kit が無いときは検出結果を伝えて終わる
+  - review-response が未コミットの修正を残したまま終わったときは、元のブランチに戻さず PR のブランチに留まり、残りの PR は処理しない
+  - 手元に未 push の commit がある PR は引き渡さず、未処理として報告する
+- PR の説明に意図的と書かれた指摘を見送り候補にする判断と、`suggestion` ブロックを直し方の第一候補にする判断は review-response に移した
+
 ## [0.2.2] - 2026-05-14
 
 ### Changed
