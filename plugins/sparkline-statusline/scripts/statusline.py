@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pattern 2: Sparkline gauge - vertical block characters"""
-import json, os, re, sys
+import json, os, re, sys, time
 from datetime import datetime, timezone
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -12,6 +12,9 @@ CIRCLES = '○◔◑◕●'
 R = '\033[0m'
 DIM = '\033[2m'
 GREEN = '\033[38;2;0;200;80m'
+RED = '\033[38;2;255;0;60m'
+WEEK_SECONDS = 7 * 24 * 3600
+PACE_THRESHOLD = 5
 
 def gradient(pct):
     if pct < 50:
@@ -47,6 +50,18 @@ def fmt(label, pct, compact):
 def hhmm(epoch):
     return datetime.fromtimestamp(epoch, tz=timezone.utc).astimezone().strftime('%H:%M')
 
+def pace_diff(used, resets_at):
+    elapsed = min(max(1 - (resets_at - time.time()) / WEEK_SECONDS, 0), 1) * 100
+    return round(used - elapsed)
+
+def fmt_pace(diff):
+    text = f'▲+{diff}pt' if diff > 0 else f'▼{diff}pt' if diff < 0 else '±0pt'
+    if diff > PACE_THRESHOLD:
+        return f'{RED}{text}{R}'
+    if diff < -PACE_THRESHOLD:
+        return f'{GREEN}{text}{R}'
+    return text
+
 def fmt_cache(pc):
     expires_at = pc.get('expires_at')
     if pc.get('warm') and expires_at is not None:
@@ -67,9 +82,12 @@ def render(compact):
         reset = f' {DIM}(reset {hhmm(resets_at)}){R}' if resets_at is not None else ''
         parts.append(fmt('5h', five, compact) + reset)
 
-    week = (data.get('rate_limits') or {}).get('seven_day', {}).get('used_percentage')
+    seven_day = (data.get('rate_limits') or {}).get('seven_day', {})
+    week = seven_day.get('used_percentage')
     if week is not None:
-        parts.append(fmt('7d', week, compact))
+        week_resets_at = seven_day.get('resets_at')
+        pace = f' {fmt_pace(pace_diff(week, week_resets_at))}' if week_resets_at is not None else ''
+        parts.append(fmt('7d', week, compact) + pace)
 
     prompt_cache = data.get('prompt_cache')
     if prompt_cache and prompt_cache.get('caching_observed'):

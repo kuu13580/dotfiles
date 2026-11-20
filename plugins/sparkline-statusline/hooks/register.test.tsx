@@ -2,9 +2,9 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
-import { circle, gradient, sparkGauge } from './register'
+import { circle, gradient, paceDiff, paceText, sparkGauge } from './register'
 
-const PROPS = { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120, scroll: { offset: 0, bodyRows: 10 }, view: {} }
+const PROPS = { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 10, bodyColumns: 120, scroll: { offset: 0, bodyRows: 10 }, view: {} }
 
 const bottom = (on: On) => {
   on('session.measure', (_$, e) => ({ changed: e.changed }))
@@ -64,6 +64,14 @@ describe('helpers', () => {
   test('circle steps at 12.5% boundaries', () => {
     expect([0, 12, 13, 37, 38, 62, 63, 87, 88, 100].map(circle).join('')).toBe('○○◔◔◑◑◕◕●●')
   })
+  test('paceDiff compares usage with the elapsed share of the week', () => {
+    const day = 24 * 60 * 60_000
+    expect(paceDiff(40, 3 * day, 0)).toBe(-17)
+    expect(paceDiff(60, 3.5 * day, 0)).toBe(10)
+    expect(paceDiff(5, 8 * day, 0)).toBe(5)
+    expect(paceDiff(90, -day, 0)).toBe(-10)
+    expect([8, -12, 0].map(paceText)).toEqual(['▲+8pt', '▼-12pt', '±0pt'])
+  })
 })
 
 describe('band', () => {
@@ -76,6 +84,21 @@ describe('band', () => {
     expect(await ui.find({ text: /reset \d\d:\d\d/ })).toBeDefined()
     expect(await ui.find({ text: /7d/ })).toBeDefined()
     expect(await ui.find({ text: /cache/ })).toBeUndefined()
+  })
+
+  test('desktop appends the 7d pace to the gauge once resetsAt is known', async ($, on) => {
+    const now = 1_000_000
+    mock.clock(on, { now })
+    bottom(on)
+    await $.session.measure({
+      context: { tokens: 62_000, window: 100_000, percent: 62 },
+      rateLimits: [{ kind: 'seven_day', percentUsed: 60, resetsAt: new Date(now + 3.5 * 24 * 60 * 60_000).toISOString() }],
+      changed: ['rateLimits'],
+    })
+    const ui = await mountBand($, 'desktop')
+    expect(await ui.find({ text: '▲+10pt' })).toBeDefined()
+    expect(await ui.find({ text: / 60%/ })).toBeDefined()
+    expect(await ui.find({ text: sparkGauge(60) })).toBeDefined()
   })
 
   test('desktop switches gauges to circles when the row does not fit', async ($, on) => {
