@@ -117,7 +117,8 @@ for c in comments:
         invalid.append({**c, "reason": "path / line / body のいずれかが欠けています"}); continue
     lines = commentable.get(p)
     if lines is None:
-        invalid.append({"path": p, "line": ln, "body": body, "reason": "この PR の diff に含まれないファイルです"}); continue
+        invalid.append({"path": p, "line": ln, "body": body,
+                        "reason": "この PR の diff で新しい側に行が無いファイルです (削除したファイルには置けないので、関係する行か本文に移してください)"}); continue
     if ln not in lines:
         near = sorted(lines, key=lambda x: abs(x - ln))[:3]
         invalid.append({"path": p, "line": ln, "body": body,

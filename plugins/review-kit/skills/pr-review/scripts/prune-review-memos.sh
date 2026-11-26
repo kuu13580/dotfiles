@@ -7,7 +7,9 @@ set -euo pipefail
 
 root="$HOME/.claude/pr-review"
 [[ -d "$root" ]] || exit 0
-mapfile -t memos < <(find "$root" -mindepth 3 -maxdepth 3 -name '*.md' | sort)
+# macOS 標準の Bash 3.2 には mapfile が無い
+memos=()
+while IFS= read -r f; do memos+=("$f"); done < <(find "$root" -mindepth 3 -maxdepth 3 -name '*.md' | sort)
 [[ ${#memos[@]} -eq 0 ]] && exit 0
 
 gh auth status >/dev/null 2>&1 || { echo "gh が未認証です。\`gh auth login\` を実行してください。" >&2; exit 1; }

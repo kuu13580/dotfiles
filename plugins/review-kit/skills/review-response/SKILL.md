@@ -81,7 +81,7 @@ Step 7 の push に失敗して再開するときは、HEAD が `pr.head_oid` �
 | 2 | <login> | `path:line` | 見送り | <理由1行>。<別 PR で対応する場合はその旨> |
 | 3 | <login> | `path:line` | 取り下げ | <否定する行を示して、起きない理由> |
 
-コミット: <追加 commit | amend> / push 後に返信 → 再レビュー依頼: <login>, <login>
+コミット: <追加 commit | amend | なし (修正なし)> / push 後に返信 → 再レビュー依頼: <login>, <login>
 少数意見: <あれば1行ずつ>
 ```
 
@@ -92,8 +92,8 @@ Step 7 の push に失敗して再開するときは、HEAD が `pr.head_oid` �
 
 ユーザーが返信案と push を承認するまで、コミット・push・返信をしない。bot への返信の文面は、push の承認に含めて個別の承認を要らないものとする。承認されたら次の順に行う:
 
-1. **コミット**: `human_reviewed: true` (人のレビュー済み) なら追加 commit。未レビューなら amend / fixup してよい。コミットメッセージはリポジトリの慣例に合わせる
-2. **push**: push 先は PR の head を明示する (`git push <remote> HEAD:<pr.head>`。`<remote>` は `pr.head_repo` を指す remote)。amend した場合だけ `--force-with-lease`。push に失敗したら返信はせず、作った commit と残りの手順 (push・返信・再レビュー依頼) を伝えて止まる。再開するときは commit を作り直さず push からやり直す
+1. **コミット**: `human_reviewed: true` (人のレビュー済み) なら追加 commit。未レビューなら amend / fixup してよい。コミットメッセージはリポジトリの慣例に合わせる。修正が無い (質問への回答だけ・全件見送り) ときはコミットしない
+2. **push**: 手元に未 push の commit が無ければ飛ばして返信へ進む。push 先は PR の head を明示する (`git push <remote> HEAD:<pr.head>`。`<remote>` は `pr.head_repo` を指す remote)。amend した場合だけ `--force-with-lease`。push に失敗したら返信はせず、作った commit と残りの手順 (push・返信・再レビュー依頼) を伝えて止まる。再開するときは commit を作り直さず push からやり直す
 3. **返信**: スレッドには `bash ${CLAUDE_PLUGIN_ROOT}/scripts/reply-thread.sh <PR> <reply_to_comment_id> <本文ファイル>`。レビュー本文と PR コメントへの返信は `gh pr comment <PR> --body-file <本文ファイル>` で、冒頭に相手と元の指摘の URL (`url`) と要約を書く (次回の取得で、URL を含む返信がある指摘を対応済みとみなすため)
 4. **再レビュー依頼**: 依頼の直前に `gh pr view <PR> --json reviews,reviewRequests` で最新の状態を取り直す。今回対応した指摘を出した人 (bot を除く) のうち、最新のレビューが APPROVED の人を外して `gh pr edit <PR> --add-reviewer <login>,...` で依頼する。記録上の「再レビュー待ち」は古い可能性があるため根拠にしない
 

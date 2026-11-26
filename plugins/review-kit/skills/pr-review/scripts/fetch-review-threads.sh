@@ -33,9 +33,11 @@ query($owner:String!,$name:String!,$number:Int!,$me:String!){
       author { login }
       myReviews: reviews(author: $me, states: [CHANGES_REQUESTED, APPROVED], last: 1) { nodes { state submittedAt commit { oid } } }
       reviewThreads(first: 100) {
+        pageInfo { hasNextPage }
         nodes {
           id isResolved isOutdated path line originalLine
-          comments(first: 20) { nodes { databaseId author { login } body createdAt } }
+          comments(first: 20) { totalCount nodes { databaseId author { login } body createdAt } }
+          last: comments(last: 1) { nodes { author { login } body createdAt } }
         }
       }
       commits(last: 50) { nodes { commit { oid messageHeadline committedDate } } }
@@ -68,12 +70,16 @@ out=$(echo "$raw" | jq --arg me "$me" --arg memo_path "$memo_path" --argjson mem
       new_commits: (if $mine == null then [] else
         (if $i == null then $cs else $cs[$i + 1:] end) | map({oid, headline: .messageHeadline, at: .committedDate}) end),
       review_commit_found: (if $mine == null then null else $i != null end),
+      # 100 件を超えたスレッドは取れていない。全件 Resolve 済みとは言えないので Approve の判断に使わない
+      threads_truncated: $pr.reviewThreads.pageInfo.hasNextPage,
       my_threads: [$pr.reviewThreads.nodes[]
         | select(.comments.nodes[0].author.login == $me)
         | {id, path, line: (.line // .originalLine), is_resolved: .isResolved, is_outdated: .isOutdated,
            reply_to_comment_id: .comments.nodes[0].databaseId,
            body: .comments.nodes[0].body,
-           replies: [.comments.nodes[1:][] | {author: .author.login, body, at: .createdAt}]}],
+           replies: [.comments.nodes[1:][] | {author: .author.login, body, at: .createdAt}],
+           replies_truncated: (.comments.totalCount > (.comments.nodes | length)),
+           last_reply: (if .comments.totalCount > 1 then (.last.nodes[0] | {author: .author.login, body, at: .createdAt}) else null end)}],
       other_threads: [$pr.reviewThreads.nodes[]
         | select(.comments.nodes[0].author.login != $me)
         | {path, line: (.line // .originalLine), is_resolved: .isResolved,
@@ -82,5 +88,7 @@ out=$(echo "$raw" | jq --arg me "$me" --arg memo_path "$memo_path" --argjson mem
     }')
 
 echo "$out"
+# 取り切れていないときは「自分のスレッドが無い」と言い切れないので exit 3 にしない
+[[ "$(echo "$out" | jq .threads_truncated)" == "true" ]] && exit 0
 [[ "$(echo "$out" | jq '.my_threads | length')" == "0" ]] && exit 3
 exit 0

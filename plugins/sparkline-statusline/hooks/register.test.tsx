@@ -70,7 +70,7 @@ describe('helpers', () => {
     expect(paceDiff(60, 3.5 * day, 0)).toBe(10)
     expect(paceDiff(5, 8 * day, 0)).toBe(5)
     expect(paceDiff(90, -day, 0)).toBe(-10)
-    expect([8, -12, 0].map(paceText)).toEqual(['▲+8pt', '▼-12pt', '±0pt'])
+    expect([8, -12, 0].map(paceText)).toEqual(['▲ +8pt', '▼ -12pt', '±0pt'])
   })
 })
 
@@ -96,7 +96,7 @@ describe('band', () => {
       changed: ['rateLimits'],
     })
     const ui = await mountBand($, 'desktop')
-    expect(await ui.find({ text: '▲+10pt' })).toBeDefined()
+    expect(await ui.find({ text: '▲ +10pt' })).toBeDefined()
     expect(await ui.find({ text: / 60%/ })).toBeDefined()
     expect(await ui.find({ text: sparkGauge(60) })).toBeDefined()
   })

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """review-kit のスキル実行で使ったトークン量を、セッションの記録から集計する。
 
-Usage: python3 usage-report.py [--session <session.jsonl>] [--all] [--log]
+Usage: python3 usage-report.py [--session <session.jsonl>] [--all] [--log] [--skill <name>]
   既定: 最後に review-kit のスキルを呼んだ時点から記録の最後までを1件として出す
+  --skill: そのスキルを最後に呼んだ時点から記録の最後までを1件とする (途中で呼んだ別のスキルの分も含める)
   --all: このセッションで review-kit のスキルを呼んだ回ごとに出す
   --log: 結果を ~/.claude/review-kit/usage.tsv に追記する (傾向を見るため)
 """
@@ -91,9 +92,15 @@ def fmt(n):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--session")
-    ap.add_argument("--all", action="store_true")
+    scope = ap.add_mutually_exclusive_group()
+    scope.add_argument("--all", action="store_true")
+    scope.add_argument("--skill")
     ap.add_argument("--log", action="store_true")
     a = ap.parse_args()
+    if a.skill:
+        a.skill = a.skill.removeprefix("review-kit:")
+        if a.skill not in SKILLS:
+            sys.exit(f"--skill は {', '.join(SKILLS)} のいずれかを指定してください。")
     path = a.session or find_session()
     rows = load(path)
     runs = invocations(rows)
@@ -103,7 +110,13 @@ def main():
     runs = sorted(dict(runs).items())
     agents = subagent_rows(path)
     windows = [(ts, name, runs[i + 1][0] if i + 1 < len(runs) else "9999") for i, (ts, name) in enumerate(runs)]
-    if not a.all:
+    if a.skill:
+        # review-response が中で self-review を呼ぶと区間が分かれ、親の前半が落ちるため
+        starts = [ts for ts, name in runs if name == a.skill]
+        if not starts:
+            sys.exit(f"このセッションでは {a.skill} が呼ばれていません。")
+        windows = [(starts[-1], a.skill, "9999")]
+    elif not a.all:
         windows = windows[-1:]
     lines = []
     for start, name, end in windows:

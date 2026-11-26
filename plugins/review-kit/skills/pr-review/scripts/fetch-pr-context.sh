@@ -57,12 +57,13 @@ query($owner: String!, $name: String!, $number: Int!, $me: String!) {
       myReviews: reviews(author: $me, states: [CHANGES_REQUESTED, APPROVED], last: 1) { nodes { state submittedAt commit { oid } } }
       commits(last: 50) { nodes { commit { oid messageHeadline committedDate } } }
       reviewThreads(first: 100) {
+        pageInfo { hasNextPage }
         nodes {
           id isResolved isOutdated path line originalLine
           comments(first: 3) { nodes { databaseId author { login } body } }
         }
       }
-      files(first: 100) { nodes { path additions deletions } }
+      files(first: 100) { pageInfo { hasNextPage } nodes { path additions deletions } }
     }
   }
 }
@@ -127,7 +128,9 @@ jq -n \
        number: $pr.number, title: $pr.title, url: $pr.url, body: $pr.body,
        state: $pr.state, is_draft: $pr.isDraft, author: $pr.author.login,
        base: $pr.baseRefName, head: $pr.headRefName, head_oid: $pr.headRefOid,
-       changed_files: [$pr.files.nodes[] | {path, additions, deletions}]
+       changed_files: [$pr.files.nodes[] | {path, additions, deletions}],
+       # 101 ファイル目以降は changed_files にも rule_files の祖先 CLAUDE.md 探索にも入らない
+       files_truncated: $pr.files.pageInfo.hasNextPage
      },
      local: {
        repo: $current_repo, repo_root: $repo_root, branch: $current_branch,
@@ -151,6 +154,7 @@ jq -n \
        body: .comments.nodes[0].body,
        reply_count: (.comments.nodes | length - 1)
      }],
+     threads_truncated: $pr.reviewThreads.pageInfo.hasNextPage,
      rule_files: $rule_files,
      review_memo: {path: $memo_path, exists: $memo_exists}
    }'

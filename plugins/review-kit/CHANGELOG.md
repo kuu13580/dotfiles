@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-11-26
+
+### Fixed
+
+- pr-review: checkout で fast-forward できないとき、手元にしか無い commit を `git log <b> --not <remote>/<b> <remote>/<b>@{1}` で判定し、空のときだけ `--force` する。判定できない (fork の PR など) ときは相談する
+- review-response: 長いレビュー本文・コメントの退避先を、共有の `/tmp` の決まったパスから実行ごとの `mkdtemp` (0700) に変える
+- review-response: 修正が無い (回答だけ・全件見送り) ときはコミットせず、未 push の commit が無ければ push を飛ばす
+- prune-review-memos.sh: Mac 標準の Bash 3.2 で `mapfile` が無く毎回失敗していた
+- check-review-validity: pr-review の規約違反のまとめと「その他」のコメントに分割を求めず、項目ごとに検証する
+- usage-report.py に `--skill` を追加。報告の1行に、中で呼んだ self-review の分も含める
+- レビュー本文・PR コメントを新しい `scripts/fetch-pr-bodies.sh` で REST の全件取得にし、長い PR での取りこぼしをなくす。返信済みの判定で `…-123` が `…-1234` に一致していた
+- fetch-review-threads / fetch-pending-review / fetch-pr-context: 件数の上限を超えたことを返す。超えたら Approve を提案せず、全件検証済みとも書かない
+- detect-state: 行スレッドに未解決が無くても、head の commit より後の人のレビュー本文・PR コメントに未返信のものがあれば review-response を勧める
+- post-pending-review: 削除したファイルへの指摘を弾いたとき、行か本文に移すよう案内する
+- list-review-prs: API の取得に失敗したら「依頼なし」と案内せず exit 1 で止まる
+
 ## [0.1.1] - 2026-11-20
 
 ### Changed

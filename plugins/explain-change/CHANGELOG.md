@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-26
+
+### Fixed
+
+- amend・rebase のあとに引数なしで実行すると、PR に未反映の変更を落としていた。自分の amend・rebase なら head から、remote 側と分岐していれば分岐点からの差分にする
+- マージコミットを対象にすると diff が空になっていた。`git show -m --first-parent` にする
+
 ## [1.1.0] - 2026-10-21
 
 ### Changed

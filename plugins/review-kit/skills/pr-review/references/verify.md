@@ -14,9 +14,10 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/pr-review/scripts/fetch-review-threads.sh <PR�
 | --- | --- |
 | 0 | JSON 出力 |
 | 1 | エラー |
-| 3 | 自分が立てたスレッドが 1 件もない (フェーズA に回すか確認する) |
+| 3 | 自分が立てたスレッドが 1 件もない (フェーズA に回すか確認する)。`threads_truncated` のときは 0 を返す |
 
-- `my_threads`: 自分が起点のスレッド。`replies` に実装者の返答が入る
+- `my_threads`: 自分が起点のスレッド。`replies` に実装者の返答が入る (`replies_truncated: true` なら途中が欠けているので、最新の返答は `last_reply` で見る)
+- `threads_truncated: true` ならスレッドが 100 件を超えて取り切れていない。その旨を報告に書き、Approve は提案せず、残りのスレッドを GitHub 上で確認してもらう
 - `my_last_review.commit`: 前回レビュー時点の commit。ここから `head_oid` までが今回見る範囲
 - `new_commits`: 前回レビュー以降の commit
 - `review_memo`: フェーズA が残した引き継ぎメモ
@@ -121,7 +122,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/reply-thread.sh <PR番号|URL> <reply_to_comm
 
 **(3) 新規指摘** — B-3 で出たものは `post-pending-review.sh` で pending に積む (フェーズA の A-6 と同じ)。pending が残っている状態では Approve しない。
 
-**(4) Approve** — 全スレッドが Resolve 済みで、新規指摘も pending も残っていないときだけ提案する。
+**(4) Approve** — 全スレッドが Resolve 済みで、新規指摘も pending も残っておらず、`threads_truncated` が `false` のときだけ提案する。
 
 ```bash
 gh pr review <N> --repo <repo> --approve --body "<ユーザーが承認した文面>"

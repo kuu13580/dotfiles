@@ -53,6 +53,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/check-review-validity/scripts/fetch-pending-re
 - `submitted_reviews[]` / `other_threads[]`: 既に submit 済みのレビューとスレッド。重複検出に使う。
   GitHub の `reviewThreads` は自分の未 submit コメントも返してくるが、スクリプト側で ID 照合して除外済み。
   つまり `other_threads[]` に同じ指摘があれば **本当の重複** なので、そのまま重複と判断してよい
+- `truncated`: 取得の上限で落ちたものがあるか。`pending_comments` が true なら見出しを「ドラフト {summary.pending_comments_total} 件中 {summary.pending_comments} 件を検証」にし、全件を検証済みと書かない。`submitted_reviews` / `other_threads` が true なら重複判定が不完全な旨を注意書きに出す
 - `local_code_available`: ローカルに PR のコードがあるか (Step 2 の分岐)
 - `dirty_worktree`: 未コミット変更の有無
 - `same_repository`: カレントリポジトリの PR か (別リポジトリなら規約ファイルを読めない)
@@ -125,7 +126,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/check-review-validity/scripts/fetch-pending-re
 
 - **根拠がない**: 「なぜ問題か」が書かれていない指摘は、実装者が判断できず往復が増える → ✏️
 - **nit と blocking の混同**: 好みレベルの話が断定形で書かれていると、実装者は必須修正だと受け取る → ✏️ (`nit:` を付ける等の文面案を出す)
-- **複数の指摘が 1 コメントに混在**: 片方だけ直されて終わる → ✏️ (分割を提案)
+- **複数の指摘が 1 コメントに混在**: 片方だけ直されて終わる → ✏️ (分割を提案)。ただし pr-review の `references/review.md` が定める規約違反のまとめ (`【規約】規約違反がまとめて N 件あります` で始まる) と「その他」(`【確認】その他の指摘 (N 件)` で始まる) のコメントは、件数の上限のための形式なので分割を求めず、列挙された各項目を個別に検証する (表の判定は項目のうち最も重いもの、詳細に項目ごとの判定を書く)
 - **過剰要求**: その PR の範囲を超えるリファクタ要求 → ✏️ か ❌ (別 Issue 化の提案)
 
 ### 観点 5: 外部事実の裏取り (条件付き)
@@ -163,7 +164,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/check-review-validity/scripts/fetch-pending-re
 ## PR #{number} {title} — ドラフト {N} 件
 {url}
 
-{⚠ 注意書き (該当時のみ: diff ベース判定 / 未コミット変更あり / 別リポジトリで規約未参照 / PR が OPEN でない)}
+{⚠ 注意書き (該当時のみ: diff ベース判定 / 未コミット変更あり / 別リポジトリで規約未参照 / PR が OPEN でない / `truncated` のいずれかが true)}
 
 | # | 判定 | 場所 | 一言 |
 |---|------|------|------|
