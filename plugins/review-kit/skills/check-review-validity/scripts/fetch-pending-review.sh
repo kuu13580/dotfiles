@@ -84,6 +84,7 @@ query($owner: String!, $name: String!, $number: Int!) {
           id body
           author { login }
           comments(first: 100) {
+            totalCount
             nodes {
               id path line originalLine startLine originalStartLine
               diffHunk body outdated url
@@ -91,10 +92,12 @@ query($owner: String!, $name: String!, $number: Int!) {
           }
         }
       }
-      submitted: reviews(first: 30, states: [COMMENTED, APPROVED, CHANGES_REQUESTED, DISMISSED]) {
+      submitted: reviews(last: 30, states: [COMMENTED, APPROVED, CHANGES_REQUESTED, DISMISSED]) {
+        totalCount
         nodes { state body submittedAt author { login } }
       }
-      reviewThreads(first: 50) {
+      reviewThreads(first: 100) {
+        pageInfo { hasNextPage }
         nodes {
           isResolved isOutdated
           comments(first: 1) { nodes { id author { login } path line body } }
@@ -237,11 +240,18 @@ if ! output=$(jq -n \
     other_threads: $threads,
     summary: {
       pending_comments: ($pending.comments.nodes | length),
+      pending_comments_total: $pending.comments.totalCount,
       outdated_comments: ([$pending.comments.nodes[] | select(.outdated == true)] | length),
       has_review_body: (($pending.body // "") != ""),
       submitted_reviews: ($pr.submitted.nodes | length),
       other_threads: ($threads | length),
       unresolved_other_threads: ([$threads[] | select(.is_resolved == false)] | length)
+    },
+    # 取得の上限で落ちたものがあるか。pending が欠けていれば全件を検証したとは言えず、他は重複判定が漏れる
+    truncated: {
+      pending_comments: ($pending.comments.totalCount > ($pending.comments.nodes | length)),
+      submitted_reviews: ($pr.submitted.totalCount > ($pr.submitted.nodes | length)),
+      other_threads: $pr.reviewThreads.pageInfo.hasNextPage
     }
   }'); then
   echo "取得結果の JSON 組み立てに失敗しました。" >&2

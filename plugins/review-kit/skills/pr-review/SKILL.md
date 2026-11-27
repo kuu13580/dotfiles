@@ -87,6 +87,7 @@ JSON の要点:
 - `my_last_review` / `new_commits_since_my_review`: フェーズ判定
 - `existing_threads`: 他レビュアーとの重複判定に使う
 - `rule_files`: 規約チェックで読む候補
+- `threads_truncated` / `pr.files_truncated`: 既存スレッド・変更ファイルが 100 件を超えて取り切れていない。重複判定や祖先 CLAUDE.md の収集が不完全になるので、その旨を報告に書く
 - `my_pending_review`: `true` なら既に未 submit のドラフトがある (後述)
 - `review_memo`: 前回のレビューで残した引き継ぎメモ (`~/.claude/pr-review/<owner>/<repo>/<N>.md`)。フェーズB はここから始める
 
@@ -101,7 +102,7 @@ JSON の要点:
 1. `same_repository: false` (別リポジトリの URL 指定) → ここでは checkout しない (`gh pr checkout <N>` がカレントリポジトリの同番号 PR を取ってしまう)。clone がある場所を聞き、あればそのディレクトリで Step 2 からやり直す。なければ `gh pr diff` ベースの精度限定モードになる旨を伝えた上で続行し、テスト検証はできないと明記する
 2. `dirty: true` → **停止して相談する**。`git stash` も `git checkout -- .` も勝手に実行しない (他のセッションの作業中かもしれない)。HEAD が一致していても、未コミットの変更が検証のテストに混ざるので先に止まる
 3. `head_matches: true` → **何もしない**
-4. それ以外 (別ブランチ、または PR ブランチ上だが head より古い) → `gh pr checkout <N>` する。別ブランチから切り替えた場合は、切り替え前のブランチ名を控えておき、報告で checkout した事実だけを伝える (元に戻すかは聞かない)。force push で fast-forward できず失敗したら、そのローカルブランチで手元の commit を作っていないかを `git reflog show --format=%gs <ブランチ>` で見る (rebase されると古い commit は remote から消えるので、remote との比較では判定できない)。`commit` / `cherry-pick` / `rebase` / `revert` で始まる行が無ければ確認せず `gh pr checkout <N> --force` で合わせ、あれば止まって相談する。`git checkout --detach` で開かない (VS Code などがブランチから PR を探せなくなる)
+4. それ以外 (別ブランチ、または PR ブランチ上だが head より古い) → `gh pr checkout <N>` する。別ブランチから切り替えた場合は、切り替え前のブランチ名を控えておき、報告で checkout した事実だけを伝える (元に戻すかは聞かない)。force push で fast-forward できず失敗したら、手元にしか無い commit を `git log --oneline <ブランチ> --not <remote>/<ブランチ> <remote>/<ブランチ>@{1}` で見る (`@{1}` は fetch 前の remote の head で、force push で消えた PR の古い commit を除く)。コマンドが成功して出力が空なら確認せず `gh pr checkout <N> --force` で合わせる。commit が出た、または `<remote>/<ブランチ>` や `@{1}` が無くて判定できない (fork の PR など) ときは、`--force` せず一覧を示して相談する。`git checkout --detach` で開かない (VS Code などがブランチから PR を探せなくなる)
 
 checkout した場合は `fetch-pr-context.sh` をもう一度実行し、`rule_files` を PR 側のツリーから取り直す (PR 自身が追加・変更した規約を拾うため)。
 

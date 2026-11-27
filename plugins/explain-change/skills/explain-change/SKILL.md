@@ -51,7 +51,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/skills/explain-change/scripts/resolve-target.sh $ARGU
 - `stat` / `files` / `commits`: 規模の把握と調査計画に使う
 - `untracked`: worktree 対象のときの未追跡ファイル。`git diff` に出ないので**別途 Read する**
 - `pr`: PR のとき、`body` (description) と `url`。意図の一次情報なので必ず読む
-- `local_changes`: 引数なしで PR を対象にし、手元に PR へ未反映の変更があるとき。`diff_command` (PR の head からの差分。head が手元に無ければ未コミット分だけ)、`includes_unpushed_commits`、`files`、`untracked` (別途 Read する)。**解説の対象に含め**、ページでは「PR に未反映の変更」と明示する。無いときは `null` かフィールド自体が無い
+- `local_changes`: 引数なしで PR を対象にし、手元に PR へ未反映の変更があるとき。`diff_command` (PR の head か、remote 側と分岐していればその分岐点からの差分。head が手元に無い・手元が古いだけなら未コミット分だけ。手元で新しい base に rebase していると base 側の変更も混ざる)、`includes_unpushed_commits`、`files`、`untracked` (別途 Read する)。**解説の対象に含め**、ページでは「PR に未反映の変更」と明示する。無いときは `null` かフィールド自体が無い
 - `code_links`: PR のとき、コードリンクの基準。`blob_base` (`https://github.com/<owner>/<repo>/blob`)、`after` (マージ済みはマージコミット、未マージは head)、`before` (マージコミットの第1親、未マージは merge-base)。取得に失敗した値は空文字。PR 以外は `null`
 - `resolved_ref` / `default_branch`: ブランチ対象のとき。`resolved_ref` は git に渡せる完全 ref (リモートのみのブランチでも解決済み)
 - `local_code`: 手元のファイルで対象のコードが読めるか。**調査方法がここで決まる**

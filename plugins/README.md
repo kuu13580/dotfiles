@@ -24,7 +24,7 @@ git worktree を fzf ベースの `wt` 系コマンドで管理し、各 worktre
 揺らぐ事実 (ライブラリのバージョン、料金、リリース、最新動向など) が話題になったら、内部知識で即答せず WebSearch / WebFetch で一次情報を取りに行ってから回答させる skill。
 → [web-search/README.md](web-search/README.md)
 
-### review-kit (v0.1.1)
+### review-kit (v0.1.2)
 
 Claude が行うすべてのレビューで共有する原則 (3軸の観点・確度3段の検証・3軸の議論で直すかを決める) と、それを使う4スキル。self-review (実装の区切りで自分の差分を見直して直す) / review-response (自分の PR に来た指摘を検証して直し、返信案 → 承認後に push・返信・再レビュー依頼) / pr-review (他人の PR のレビューと修正確認) / check-review-validity (submit 前の下書きレビューの検証)。4つとも自然文で呼べ、冒頭で GitHub の状態を見て合うスキルへの切り替えを提案する。
 → [review-kit/README.md](review-kit/README.md)
@@ -34,7 +34,7 @@ Claude が行うすべてのレビューで共有する原則 (3軸の観点・�
 review-kit に移設済み。今までどおり `/pr-review`・`/check-review-validity` で呼ぶと、review-kit が入っていればそちらに引き継ぎ、入っていなければ review-kit の入れ方を案内する。
 → [pr-review/README.md](pr-review/README.md) / [check-review-validity/README.md](check-review-validity/README.md)
 
-### explain-change (v1.1.0)
+### explain-change (v1.1.1)
 
 PR / commit / ブランチ / 現 worktree の変更を調査し、一枚絵で全体像を見せてから種類別 (リファクタリング / 不具合修正 / 新機能) に要点と動作確認すると良い点を示す解説を Artifact として publish する read-only スキル。`/explain-change [<PR番号> | <PR URL> | <commit> | <A..B> | <ブランチ名>]`。
 → [explain-change/README.md](explain-change/README.md)

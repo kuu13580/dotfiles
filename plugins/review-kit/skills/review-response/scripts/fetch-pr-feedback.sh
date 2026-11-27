@@ -41,10 +41,8 @@ query($owner:String!,$name:String!,$number:Int!){
         comments(first:50){ totalCount nodes { databaseId author { __typename login } body createdAt } }
         last: comments(last:1){ nodes { author { __typename login } body createdAt } }
       } }
-      reviews(last:50){ nodes { author { __typename login } state body submittedAt url } }
       latestReviews(first:50){ nodes { author { __typename login } state submittedAt } }
       reviewRequests(first:30){ nodes { requestedReviewer { __typename ... on User { login } ... on Bot { login } ... on Mannequin { login } ... on Team { slug } } } }
-      comments(last:100){ nodes { databaseId author { __typename login } body createdAt url } }
     }
   }
 }' 2>&1) || true
@@ -53,12 +51,16 @@ msg=$(echo "$raw" | jq -r '[.errors[]?.message] | join(" / ")' 2>/dev/null || ec
 echo "$raw" | jq -e '.data.repository.pullRequest' >/dev/null 2>&1 || {
   echo "GitHub API の呼び出しに失敗しました: $(echo "$raw" | head -3)" >&2; exit 1; }
 
-out=$(echo "$raw" | jq --arg me "$me" --arg repo "$repo" '
+author=$(echo "$raw" | jq -r '.data.repository.pullRequest.author.login // "ghost"')
+# 本文が 128KiB を超えると --argjson では渡せないのでファイル経由にする
+bodies=$(mktemp); trap 'rm -f "$bodies"' EXIT
+bash "$(dirname "$0")/../../../scripts/fetch-pr-bodies.sh" "$repo" "$number" "$author" "$me" >"$bodies" || {
+  echo "レビュー本文・PR コメントの取得に失敗しました。" >&2; exit 1; }
+
+out=$(echo "$raw" | jq --arg me "$me" --arg repo "$repo" --slurpfile bodies "$bodies" '
   def bot: . == null or .__typename == "Bot" or ((.login // "") | test("\\[bot\\]$"));
   def who: .login // "ghost";
   .data.repository.pullRequest as $pr
-  # PR 作成者のコメント本文。元の指摘の URL を含むものだけを、その指摘への返信とみなす
-  | ([$pr.comments.nodes[] | select(.author.login == $pr.author.login) | .body] | join("\n")) as $replies
   | {repo: $repo, me: $me,
      pr: {number: $pr.number, title: $pr.title, url: $pr.url, state: $pr.state, is_draft: $pr.isDraft,
           author: $pr.author.login, is_mine: ($pr.author.login == $me),
@@ -77,26 +79,23 @@ out=$(echo "$raw" | jq --arg me "$me" --arg repo "$repo" '
           comments_truncated: (.comments.totalCount > (.comments.nodes | length)),
           comments: [.comments.nodes[] | {author: (.author | who), body, at: .createdAt}],
           last_comment: (.last.nodes[0] | {author: (.author | who), body, at: .createdAt})}],
-     review_bodies: [$pr.reviews.nodes[] | select(.author.login != $me and .author.login != $pr.author.login)
-       | select(.body != "")
-       | {author: (.author | who), is_bot: (.author | bot), state, body, at: .submittedAt, url,
-          answered: (.url as $u | $replies | contains($u))}],
-     pr_comments: [$pr.comments.nodes[] | select(.author.login != $me and .author.login != $pr.author.login)
-       | {id: .databaseId, author: (.author | who), is_bot: (.author | bot), body, at: .createdAt, url,
-          answered: (.url as $u | $replies | contains($u))}],
+     review_bodies: $bodies[0].review_bodies,
+     pr_comments: $bodies[0].pr_comments,
      latest_reviews: [$pr.latestReviews.nodes[] | {author: (.author | who), is_bot: (.author | bot), state, at: .submittedAt}],
      pending_requests: [$pr.reviewRequests.nodes[].requestedReviewer | select(. != null)
        | if .slug then "team:" + .slug else .login end]}')
 
-# 長い本文は途中で切ると指摘が落ちる (bot のレビュー本文は数万字になる) ため、全文をファイルに置いて先頭だけ JSON に残す
-body_dir="${TMPDIR:-/tmp}/review-kit-feedback/${repo//\//_}-$number"
+# 長い本文は途中で切ると指摘が落ちる (bot のレビュー本文は数万字になる) ため、全文をファイルに置いて先頭だけ JSON に残す。
+# 共有の /tmp で予測できるパスを使うと symlink で上書き・覗き見されるため、実行ごとに 0700 の一時ディレクトリを作る
 out=$(echo "$out" | python3 -c '
-import json, os, sys
-d = json.load(sys.stdin); body_dir = sys.argv[1]; limit = 4000
+import json, os, sys, tempfile
+d = json.load(sys.stdin); prefix = sys.argv[1]; limit = 4000; body_dir = None
 def spill(item, name):
+    global body_dir
     if len(item.get("body") or "") <= limit:
         return
-    os.makedirs(body_dir, exist_ok=True)
+    if body_dir is None:
+        body_dir = tempfile.mkdtemp(prefix=prefix)
     path = os.path.join(body_dir, name + ".md")
     with open(path, "w") as f:
         f.write(item["body"])
@@ -108,7 +107,7 @@ for i, t in enumerate(d["threads"]):
     for j, c in enumerate(t["comments"]): spill(c, f"thread-{i}-{j}")
     spill(t["last_comment"], f"thread-{i}-last")
 print(json.dumps(d, ensure_ascii=False, indent=2))
-' "$body_dir")
+' "review-kit-feedback-${repo//\//_}-$number-")
 
 echo "$out"
 # 取り切れていないときは「指摘が無い」と言い切れないので exit 3 にしない

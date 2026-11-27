@@ -66,7 +66,23 @@ query($owner:String!,$name:String!,$number:Int!){
        # head の commit より後に出た変更要求だけを未対応とみなす (前のものは修正済みで再レビュー待ちの可能性が高い)
        changes_requested: (.commits.nodes[0].commit.committedDate as $head_at
          | [.latestReviews.nodes[] | select(.state == "CHANGES_REQUESTED") | select(.submittedAt > $head_at)] | length),
+       head_at: .commits.nodes[0].commit.committedDate,
        my_pending_review: (.pending.totalCount > 0)}')
+fi
+
+# 行スレッドに指摘が無い自分の PR でも、人がレビュー本文や PR コメントで修正を頼んでいることがある。
+# changes_requested と同じく head の commit より後のものだけを数え、bot (要約が大半)・APPROVED・DISMISSED は数えない。
+# 取得に失敗しても判定は止めず、open_review_bodies を null にして理由に添える
+open_bodies=null; bodies_error=""
+if [[ "$pr" != null ]] && echo "$pr" | jq -e '.state == "OPEN" and .is_mine and .unresolved_feedback == 0
+    and .changes_requested == 0 and (.threads_truncated | not)' >/dev/null; then
+  if bodies=$(bash "$(dirname "$0")/fetch-pr-bodies.sh" "$repo" "$number" "$me" 2>"$errf"); then
+    open_bodies=$(echo "$bodies" | jq --arg head_at "$(echo "$pr" | jq -r .head_at)" '
+      [(.review_bodies[] | select(.state != "APPROVED" and .state != "DISMISSED")), .pr_comments[]
+       | select(.is_bot | not) | select(.answered | not) | select(.at > $head_at)] | length')
+  else
+    bodies_error=$(head -3 "$errf")
+  fi
 fi
 
 # 依頼一覧は他に手掛かりが無いときだけ取る (API 呼び出しを減らすため)
@@ -83,12 +99,15 @@ fi
 
 jq -n --arg me "$me" --argjson in_git "$in_git" --arg branch "$branch" --arg default_branch "$default_branch" \
   --argjson dirty "$dirty" --argjson ahead "$ahead" --argjson pr "$pr" --argjson requests "$requests" \
+  --argjson open_bodies "$open_bodies" --arg bodies_error "$bodies_error" \
   --arg requests_error "$requests_error" '
   (if $pr != null and $pr.state == "OPEN" then
      (if $pr.is_mine then
         (if ($pr.unresolved_feedback + $pr.changes_requested) > 0
          then ["review-response", "自分の PR に未解決の指摘がある"]
          elif $pr.threads_truncated then ["review-response", "スレッドが 100 件を超えて取り切れず、未解決の指摘が無いと言い切れない"]
+         elif ($open_bodies // 0) > 0 then ["review-response", "head の commit より後の人のレビュー本文・PR コメントに未返信のものがある"]
+         elif $bodies_error != "" then ["self-review", "行スレッドに未解決の指摘は無い (レビュー本文・PR コメントは取得できず未確認: " + $bodies_error + ")"]
          else ["self-review", "自分の PR で、未解決の指摘は無い"] end)
       elif $pr.my_pending_review then ["check-review-validity", "他人の PR に未 submit の下書きレビューがある"]
       else ["pr-review", "他人の PR"] end)
@@ -99,4 +118,5 @@ jq -n --arg me "$me" --argjson in_git "$in_git" --arg branch "$branch" --arg def
    else [null, "レビューする対象が見つからない"] end) as $s
   | {me: $me,
      local: {in_git: $in_git, branch: $branch, default_branch: $default_branch, dirty: $dirty, ahead: $ahead},
-     pr: $pr, review_requests: $requests, review_requests_error: (if $requests_error == "" then null else $requests_error end), suggested: $s[0], reason: $s[1]}'
+     # open_review_bodies: 数えていない (他人の PR・既に指摘がある・取得失敗) ときは null
+     pr: (if $pr == null then null else $pr + {open_review_bodies: $open_bodies} end), review_requests: $requests, review_requests_error: (if $requests_error == "" then null else $requests_error end), suggested: $s[0], reason: $s[1]}'

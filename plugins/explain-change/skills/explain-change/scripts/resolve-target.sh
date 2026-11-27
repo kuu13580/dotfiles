@@ -193,7 +193,8 @@ resolve_commit() {
   if git rev-parse --verify --quiet "${sha}^" >/dev/null 2>&1; then parent="${sha}^"; else parent="$(git hash-object -t tree /dev/null)"; fi
   meta=$(git_meta "${parent}..${sha}" "${parent}..${sha}")
   state=$(local_code_state "$sha")
-  emit "commit" "commit ${sha:0:7} ${subject}" "$parent" "$sha" "git show ${sha}" "$state" "$meta"
+  # マージコミットの git show は combined diff になり、競合なしでは空になる。meta と同じ第1親との差分にする
+  emit "commit" "commit ${sha:0:7} ${subject}" "$parent" "$sha" "git show -m --first-parent ${sha}" "$state" "$meta"
 }
 
 # ---------------------------------------------------------------- range
@@ -234,16 +235,20 @@ resolve_branch() {
 
 # ---------------------------------------------------------------- local changes
 # 引数なしで PR を対象にしたとき、PR にまだ入っていない手元の変更 (未 push のコミット + 未コミット) を足す。
-# PR の head が HEAD の祖先なら head からの差分、そうでなければ (未 fetch / 巻き戻し) 未コミット分だけを拾う。
+#   head が HEAD の祖先 / 手元で head を amend・rebase した (HEAD の reflog に head がある) → head からの差分
+#   remote 側が進んだ・書き換わったうえで手元にも別の commit がある → 分岐点からの差分 (head からだと remote の変更が逆向きに出る)
+#   head が手元に無い / HEAD が head より古い / 手元の commit が head 側と同じ patch → 未コミット分だけ
 #   $1 resolve_pr の出力 JSON
 attach_local_changes() {
-  local out="$1" head_oid base unpushed=false files untracked
+  local out="$1" head_oid base="HEAD" unpushed=false files untracked
   head_oid=$(jq -r '.pr.head_oid' <<<"$out")
-  if git merge-base --is-ancestor "$head_oid" HEAD 2>/dev/null; then
-    base="$head_oid"
-    [ "$(git rev-parse HEAD)" != "$head_oid" ] && unpushed=true
-  else
-    base="HEAD"
+  if ! git cat-file -e "${head_oid}^{commit}" 2>/dev/null || git merge-base --is-ancestor HEAD "$head_oid"; then
+    :
+  # pipefail 下で grep -q が先に抜けると git が SIGPIPE で落ちて偽になるため、出力を受けてから探す
+  elif git merge-base --is-ancestor "$head_oid" HEAD || grep -qx "$head_oid" <<<"$(git reflog --format=%H HEAD 2>/dev/null)"; then
+    base="$head_oid"; unpushed=true
+  elif grep -q '^+' <<<"$(git cherry "$head_oid" HEAD)"; then
+    base=$(git merge-base "$head_oid" HEAD); unpushed=true
   fi
   if [ "$unpushed" = false ] && [ "$DIRTY" = false ]; then
     echo "$out"

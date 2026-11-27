@@ -82,7 +82,7 @@ python3 plugins/review-kit/scripts/usage-report.py --all   # このセッショ�
 column -t -s $'\t' ~/.claude/review-kit/usage.tsv         # これまでの記録
 ```
 
-1回の範囲は、スキルを呼んだ時点から次に review-kit のスキルを呼ぶまで。review-response の中で呼ぶ self-review は別の回として出る。
+報告に付く1回の範囲は、そのスキルを最後に呼んだ時点から報告まで (`--skill`)。review-response の中で呼ぶ self-review の分も含む。`--all` は、スキルを呼んだ時点から次に review-kit のスキルを呼ぶまでを1回として区切って出す。
 
 ## 前提条件
 
@@ -101,6 +101,7 @@ review-kit/
 │   └── routing.md               # 状態から合うスキルを選ぶ表
 ├── scripts/
 │   ├── detect-state.sh          # ローカルと GitHub の状態から合うスキルを判定
+│   ├── fetch-pr-bodies.sh       # レビュー本文と PR コメントを全件取り、返信済みかを付ける
 │   ├── usage-report.py          # スキル実行で使ったトークン量をセッションの記録から集計
 │   └── reply-thread.sh          # レビュースレッドに返信 (pr-review / review-response)
 ├── skills/

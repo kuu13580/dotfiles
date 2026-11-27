@@ -19,10 +19,16 @@ repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>&1) || {
 }
 me=$(gh api user --jq .login)
 
+errf=$(mktemp); trap 'rm -f "$errf"' EXIT
+
+# 取得の失敗を空扱いにすると「依頼なし」(exit 3) と区別できなくなるので、どちらも exit 1 にする
 # --- requested: review-requested は チーム経由の依頼も拾うため、User 指名だけに絞る ---
-requested=$(gh pr list --repo "$repo" --search "review-requested:@me" --state open --limit 50 \
-  --json number,title,url,author,isDraft,reviewRequests,updatedAt 2>/dev/null \
-  | jq --arg me "$me" '[ .[]
+prs=$(gh pr list --repo "$repo" --search "review-requested:@me" --state open --limit 50 \
+  --json number,title,url,author,isDraft,reviewRequests,updatedAt 2>"$errf") || {
+  echo "レビュー依頼の PR の取得に失敗しました: $(head -3 "$errf")" >&2
+  exit 1
+}
+requested=$(echo "$prs" | jq --arg me "$me" '[ .[]
       | select(.isDraft | not)
       | select(any(.reviewRequests[]; .__typename == "User" and .login == $me))
       | {number, title, url, author: .author.login, updatedAt} ]')
@@ -39,7 +45,10 @@ query($q: String!, $me: String!) {
       }
     }
   }
-}' 2>/dev/null) || reviewed='{}'
+}' 2>"$errf") || {
+  echo "修正確認待ちの PR の検索に失敗しました: $(head -3 "$errf")" >&2
+  exit 1
+}
 
 awaiting=$(echo "$reviewed" | jq '[ (.data.search.nodes // [])[]
     | select(.number != null)

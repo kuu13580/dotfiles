@@ -11,6 +11,8 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/detect-state.sh [<PR番号|PR URL>]
 | 状態 | スキル |
 | --- | --- |
 | 自分の PR に未解決の指摘がある (自分が立てたスレッドと、最後の発言が自分のスレッドは数えない。head の commit より後に出た変更要求は数える) | review-response (直したあと self-review も回す) |
+| 自分の PR で、スレッドが多すぎて取り切れない | review-response |
+| 自分の PR で、head の commit より後の人のレビュー本文・PR コメントに未返信のものがある (APPROVED・DISMISSED の本文は数えない。件数は `pr.open_review_bodies`) | review-response |
 | 自分の PR で、未解決の指摘は無い | self-review (PR 全体を見直す) |
 | 他人の PR に自分の未 submit の下書きレビューがある | check-review-validity |
 | 他人の PR | pr-review |
@@ -35,7 +37,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/detect-state.sh [<PR番号|PR URL>]
 各スキルの最後の報告の直前に実行し、出た1行を報告の末尾 (pr-review は控え) に付ける。結果は `~/.claude/review-kit/usage.tsv` にも追記される:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/usage-report.py --log
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/usage-report.py --log --skill <今のスキル名>
 ```
 
-他のスキルから呼ばれたとき (review-response から self-review など) は実行しない。呼び出し元がまとめて記録する。
+他のスキルから呼ばれたとき (review-response から self-review など) は実行しない。呼び出し元が `--skill` で自分の呼び出しからの区間を数えるので、呼ばれた側の分も含まれる。
